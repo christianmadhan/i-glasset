@@ -81,9 +81,23 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
   }
 
   Future<void> _pickPhoto() async {
+    // Photographing the bottle in front of you is the common case, so offer the
+    // camera first; the library is there for a photo taken earlier.
+    final source = await showGlasChoice<ImageSource>(
+      context,
+      title: 'Flaskefoto',
+      options: const [
+        (label: 'Tag et billede', value: ImageSource.camera),
+        (label: 'Vælg fra biblioteket', value: ImageSource.gallery),
+      ],
+    );
+    if (source == null || !mounted) return;
+
     final picker = ImagePicker();
     final picked = await picker.pickImage(
-      source: ImageSource.gallery,
+      source: source,
+      // Capped on the way in: the photo is copied to every phone in the room
+      // over the local socket, so a 12 MP original would be wasteful.
       maxWidth: 1600,
       imageQuality: 88,
     );

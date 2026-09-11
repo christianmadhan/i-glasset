@@ -7,13 +7,17 @@ import '../theme/glas_theme.dart';
 /// PLACEHOLDER. The real artwork is `assets/i-glasset-app-icon.png` in the
 /// Claude Design project, which the design API could only return truncated
 /// (it exceeds the 256 KiB per-file cap), so it cannot be shipped yet. Drop the
-/// full PNG into `assets/images/` and swap this widget's body for an
-/// `Image.asset` — nothing else needs to change.
+/// full PNG into `assets/images/`, point `flutter_launcher_icons` at it, and
+/// swap this widget's body for an `Image.asset` — nothing else changes.
 ///
 /// Until then this draws the same glass silhouette the live tasting screen
-/// uses, so the app is at least consistent with itself.
+/// uses, on the brand burgundy, so the app is at least consistent with itself
+/// and has a real icon to submit with.
 class AppMark extends StatelessWidget {
   const AppMark({super.key, this.size = 72, this.radius = 18});
+
+  /// The tile colour, shared with the generated launcher icon.
+  static const brandBurgundy = Color(0xFF8C1D40);
 
   final double size;
   final double radius;
@@ -25,20 +29,26 @@ class AppMark extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: const Color(0xFF8C1D40),
+        color: brandBurgundy,
         borderRadius: BorderRadius.circular(radius),
       ),
       alignment: Alignment.center,
       child: CustomPaint(
         size: Size(size * 0.46, size * 0.56),
-        painter: _GlassPainter(c.paper),
+        painter: GlasMarkPainter(c.paper),
       ),
     );
   }
 }
 
-class _GlassPainter extends CustomPainter {
-  const _GlassPainter(this.color);
+/// The glass silhouette, painted rather than shipped as a raster so it stays
+/// sharp from a 30px header to the 1024px marketing icon.
+///
+/// `tool/generate_app_icon.dart` renders this onto the brand tile to produce
+/// the launcher icons, so the icon on the home screen and the mark inside the
+/// app are the same drawing.
+class GlasMarkPainter extends CustomPainter {
+  const GlasMarkPainter(this.color);
 
   final Color color;
 
@@ -86,5 +96,5 @@ class _GlassPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_GlassPainter oldDelegate) => oldDelegate.color != color;
+  bool shouldRepaint(GlasMarkPainter oldDelegate) => oldDelegate.color != color;
 }

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  Apple requires this manifest for App Store submission. It declares two
+	  things: that the app collects nothing, and which "required reason" APIs it
+	  touches.
+
+	  Nothing is collected because there is nowhere to send it. The app has no
+	  server, no analytics and no third-party SDKs; tastings are shared directly
+	  between the phones in the room, and everything else stays on the device.
+	-->
+
+	<key>NSPrivacyTracking</key>
+	<false/>
+
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<!--
+		  File timestamps: path_provider and the local store read and write the
+		  app's own container when saving tastings and bottle photos.
+		  C617.1 — files inside the app's own container.
+		-->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>C617.1</string>
+			</array>
+		</dict>
+
+		<!--
+		  UserDefaults: shared_preferences, used only to remember which of the
+		  three colour themes the person picked.
+		  CA92.1 — accessible only to this app.
+		-->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+
+		<!--
+		  Disk space: checked before writing a downloaded bottle photo, and shown
+		  on the "Billeder på enheden" screen so the user can see what the app is
+		  keeping for them.
+		  E174.1 — to write or delete files on the user's behalf.
+		-->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>E174.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

@@ -1,0 +1,21 @@
+# Generates every launcher size from one 1024px source.
+#
+# The source is produced by `tool/generate_app_icon_test.dart`, which paints the
+# same glass the app draws in its header — so the home-screen icon and the mark
+# inside the app are literally the same drawing.
+#
+# When the real brand artwork arrives, point image_path at it and re-run:
+#   dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "assets/icon/app_icon.png"
+
+  ios: true
+  # iOS rejects any alpha channel in the marketing icon, so the source is
+  # painted edge to edge on the brand burgundy with no rounding of its own —
+  # iOS applies the mask.
+  remove_alpha_ios: true
+
+  android: true
+  adaptive_icon_background: "#8C1D40"
+  adaptive_icon_foreground: "assets/icon/app_icon.png"
+  min_sdk_android: 21

@@ -40,12 +40,9 @@ dependencies:
   path_provider: ^2.1.6
   crypto: ^3.0.7
   image_picker: ^1.2.3
-  cached_network_image: ^4.0.0
   uuid: ^4.6.0
   intl: ^0.20.3
   shared_preferences: ^2.5.5
-  qr_flutter: ^4.1.0
-  mobile_scanner: ^7.4.1
   google_fonts: ^8.2.1
   flutter_localizations:
     sdk: flutter
@@ -61,6 +58,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

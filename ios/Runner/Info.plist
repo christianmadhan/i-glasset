@@ -47,6 +47,10 @@
 			</array>
 		</dict>
 	</dict>
+	<!-- No custom cryptography: the app uses only what iOS provides. Declaring
+	     this here means App Store Connect stops asking on every upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Bruges til at finde og deltage i smagninger på de andre telefoner i rummet. Der sendes intet ud af jeres wi-fi.</string>
 	<key>NSBonjourServices</key>
@@ -54,7 +58,7 @@
 		<string>_iglasset._tcp</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>Bruges til at fotografere flasker til en smagning og til at scanne QR-koden, når du deltager.</string>
+	<string>Bruges til at fotografere flaskerne, når du sætter en smagning op.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Bruges til at vælge billeder af flasker, når du opretter en smagning.</string>
 	<key>UIFileSharingEnabled</key>

@@ -85,3 +85,42 @@ Future<bool> showGlasConfirm(
   );
   return result ?? false;
 }
+
+/// A short list of choices, in the app's own palette.
+Future<T?> showGlasChoice<T>(
+  BuildContext context, {
+  required String title,
+  required List<({String label, T value})> options,
+}) {
+  final c = context.glas;
+  return showModalBottomSheet<T>(
+    context: context,
+    backgroundColor: c.card,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+    ),
+    builder: (context) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(22, 20, 22, 8),
+            child: Text(title, style: GlasType.display(20, color: c.ink)),
+          ),
+          for (final option in options)
+            InkWell(
+              onTap: () => Navigator.pop(context, option.value),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+                child: Text(option.label,
+                    style: GlasType.body(15.5, color: c.ink)),
+              ),
+            ),
+          const SizedBox(height: 12),
+        ],
+      ),
+    ),
+  );
+}
