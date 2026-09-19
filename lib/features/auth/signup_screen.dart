@@ -111,8 +111,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Valgfrit',
-                style: GlasType.label(10.5, color: c.nightMuted)),
+            SectionLabel('Valgfrit', color: c.nightMuted),
             const SizedBox(height: 10),
             GlasTap(
               onTap: () => setState(() => _showGroupCode = !_showGroupCode),

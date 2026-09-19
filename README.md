@@ -83,13 +83,23 @@ in `<app documents>/I Glasset/tastings/<id>/items/` — a folder iOS exposes in
 the Files app — and travels to the other phones over the tasting socket, once,
 only after that glass is revealed. Old tastings work with no network at all.
 
+## The mark
+
+The brand artwork ships as `assets/icon/app_icon.png` (1024px, the launcher
+source) and `assets/images/app_mark.png` (384px, what `AppMark` draws in the
+header and on the sign-in screen) — one drawing in both places. Regenerate the
+launcher sizes with:
+
+```bash
+dart run flutter_launcher_icons
+```
+
+The launcher source is flattened edge to edge on the tile's own burgundy: both
+platforms mask their own corners, and the artwork's rounded edge carries a
+stray green rim that would otherwise show. The Android adaptive foreground is
+inset 16% so the outer figures clear a circular mask.
+
 ## Known gaps
 
-- **App icon.** The real artwork (`assets/i-glasset-app-icon.png` in the Claude
-  Design project) exceeds the design API's 256 KiB per-file limit and could only
-  be fetched truncated. `AppMark` draws a stand-in; drop the full PNG into
-  `assets/images/`, re-enable the `assets:` block in `pubspec.yaml`, and swap
-  the widget body for an `Image.asset`. Launcher icons are Flutter's defaults
-  for the same reason.
 - **Local-mode limits** — same Wi-Fi, host stays in the app, no cross-device
   sync. Listed in full in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

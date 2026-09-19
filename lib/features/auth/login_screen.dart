@@ -105,9 +105,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             Text('I Glasset',
                 style: GlasType.display(34, color: c.nightInk, height: 1.1)),
             const SizedBox(height: 6),
-            Text('Smag sammen',
-                style:
-                    GlasType.label(10.5, color: c.nightMuted, tracking: 0.18)),
+            SectionLabel('Smag sammen', color: c.nightMuted, tracking: 0.18),
           ],
         ),
 

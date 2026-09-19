@@ -39,8 +39,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       children: [
         Row(
           children: [
-            Text('Trin ${_step + 1} af ${_steps.length}',
-                style: GlasType.label(10.5, color: c.muted)),
+            SectionLabel('Trin ${_step + 1} af ${_steps.length}',
+                color: c.muted),
             const Spacer(),
             GlasTap(
               onTap: () => context.go('/'),
@@ -118,26 +118,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 }
 
 /// The dark card with the step numeral, and the slow light sweep across it.
-class _Mark extends StatefulWidget {
+class _Mark extends StatelessWidget {
   const _Mark({required this.mark});
 
   final String mark;
-
-  @override
-  State<_Mark> createState() => _MarkState();
-}
-
-class _MarkState extends State<_Mark> with SingleTickerProviderStateMixin {
-  late final AnimationController _sweep = AnimationController(
-    vsync: this,
-    duration: const Duration(seconds: 5),
-  )..repeat();
-
-  @override
-  void dispose() {
-    _sweep.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -150,24 +134,11 @@ class _MarkState extends State<_Mark> with SingleTickerProviderStateMixin {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            Positioned.fill(
-              child: AnimatedBuilder(
-                animation: _sweep,
-                builder: (context, _) => FractionalTranslation(
-                  translation: Offset(-1.2 + _sweep.value * 3.4, 0),
-                  child: Container(
-                    width: 70,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.transparent,
-                          Colors.white.withValues(alpha: 0.05),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+            const Positioned.fill(
+              child: GlasSweep(
+                width: 70,
+                opacity: 0.05,
+                period: Duration(seconds: 5),
               ),
             ),
             Column(
@@ -176,7 +147,7 @@ class _MarkState extends State<_Mark> with SingleTickerProviderStateMixin {
                 const AppMark(size: 80, radius: 20),
                 const SizedBox(height: 18),
                 Text(
-                  widget.mark,
+                  mark,
                   style: GlasType.display(54,
                       color: c.accentNight, height: 1),
                 ),

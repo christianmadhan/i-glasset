@@ -25,14 +25,14 @@ void main() {
   testWidgets('walks through all four onboarding steps', (tester) async {
     await tester.pumpWidget(wrap(const OnboardingScreen()));
 
-    expect(find.text('Trin 1 af 4'), findsOneWidget);
+    expect(find.text('TRIN 1 AF 4'), findsOneWidget);
     expect(find.text('Værten samler flaskerne'), findsOneWidget);
     expect(find.text('Videre'), findsOneWidget);
 
     for (var step = 2; step <= 4; step++) {
       await tester.tap(find.text(step == 5 ? 'Kom i gang' : 'Videre'));
       await tester.pump(const Duration(milliseconds: 400));
-      expect(find.text('Trin $step af 4'), findsOneWidget);
+      expect(find.text('TRIN $step AF 4'), findsOneWidget);
     }
 
     // The last step offers the way in rather than another "Videre".
@@ -51,7 +51,7 @@ void main() {
 
     await tester.tap(find.text('←'));
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('Trin 1 af 4'), findsOneWidget);
+    expect(find.text('TRIN 1 AF 4'), findsOneWidget);
   });
 
   testWidgets('the progress dots jump straight to a step', (tester) async {
@@ -61,7 +61,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('guide-dot-3')));
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('Trin 4 af 4'), findsOneWidget);
+    expect(find.text('TRIN 4 AF 4'), findsOneWidget);
   });
 
   testWidgets('renders without overflowing a small phone', (tester) async {

@@ -111,7 +111,8 @@ class LocalTastingRepository
     );
     rows.sort((a, b) => (a['position'] as int).compareTo(b['position'] as int));
     return [
-      for (final row in rows) TastingItem.fromJson({...row, 'is_revealed': true}),
+      for (final row in rows)
+        TastingItem.fromJson(_visibleItem(row, forHost: true)),
     ];
   }
 
@@ -127,9 +128,7 @@ class LocalTastingRepository
     final amHost = tasting.hostId == _session.userId;
     return [
       for (final row in rows)
-        TastingItem.fromJson(amHost
-            ? {...row, 'is_revealed': true}
-            : _visibleItem(row, forHost: false)),
+        TastingItem.fromJson(_visibleItem(row, forHost: amHost)),
     ];
   }
 
@@ -360,7 +359,12 @@ class LocalTastingRepository
   @override
   Future<Tasting> openLobby(String tastingId) async {
     final tasting = await _requireHost(tastingId);
-    final updated = await updateTasting(tastingId, status: TastingStatus.lobby);
+    // Re-opening an evening that is already pouring must not rewind the room
+    // to the lobby — the host has usually just come back to the app, which is
+    // also why the advertisement below is (re)started either way.
+    final updated = tasting.status == TastingStatus.live
+        ? tasting
+        : await updateTasting(tastingId, status: TastingStatus.lobby);
 
     final me = await _store.byId(LocalStore.profiles, _userId);
     final glasses = (await hostItems(tastingId)).length;
@@ -469,7 +473,7 @@ class LocalTastingRepository
           'revealed_at':
               row['revealed_at'] ?? DateTime.now().toUtc().toIso8601String(),
         });
-    final item = TastingItem.fromJson({...revealed!, 'is_revealed': true});
+    final item = TastingItem.fromJson(_visibleItem(revealed!, forHost: true));
 
     if (tasting.config.guessOn) {
       final forItem = await _store.where(
@@ -536,7 +540,7 @@ class LocalTastingRepository
     });
 
     _touch(tastingId);
-    return TastingItem.fromJson({...row, 'is_revealed': true});
+    return TastingItem.fromJson(_visibleItem(row, forHost: true));
   }
 
   @override
@@ -553,7 +557,7 @@ class LocalTastingRepository
 
     _touch(item.tastingId);
     await _host.broadcastSync();
-    return TastingItem.fromJson({...row, 'is_revealed': true});
+    return TastingItem.fromJson(_visibleItem(row, forHost: true));
   }
 
   @override
@@ -897,7 +901,11 @@ class LocalTastingRepository
     required bool forHost,
   }) {
     final revealed = row['revealed_at'] != null;
-    if (forHost) return {...row, 'is_revealed': true};
+    // The host sees every field; that is not the same as the glass having
+    // been revealed to the room. `is_revealed` is the room's state, so it
+    // tracks `revealed_at` for the host too — otherwise the host's own
+    // screens count unpoured glasses as poured.
+    if (forHost) return {...row, 'is_revealed': revealed};
 
     if (!revealed) {
       return {

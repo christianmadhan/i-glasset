@@ -266,7 +266,12 @@ class SupabaseTastingRepository implements TastingRepository {
 
   @override
   Future<Tasting> openLobby(String tastingId) async {
-    final tasting = await updateTasting(tastingId, status: TastingStatus.lobby);
+    // Same rule as the device build: coming back to a live evening reopens it
+    // where it stands rather than sending the room back to the lobby.
+    final current = await byId(tastingId);
+    final tasting = current.status == TastingStatus.live
+        ? current
+        : await updateTasting(tastingId, status: TastingStatus.lobby);
     await joinByCode(tasting.joinCode);
     return tasting;
   }

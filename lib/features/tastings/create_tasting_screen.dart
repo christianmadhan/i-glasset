@@ -163,7 +163,7 @@ class _CreateTastingScreenState extends ConsumerState<CreateTastingScreen> {
               ),
             ),
             const Spacer(),
-            Text('Trin 1 af 2', style: GlasType.label(10.5, color: c.muted)),
+            SectionLabel('Trin 1 af 2', color: c.muted),
           ],
         ),
         Text('Opret smagning', style: GlasType.display(29, color: c.ink)),

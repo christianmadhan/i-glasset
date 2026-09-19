@@ -212,6 +212,10 @@ class _LiveScreenState extends ConsumerState<LiveScreen> {
       await ref.read(tastingRepositoryProvider).revealItem(item.id);
       ref.invalidate(itemsProvider(widget.tastingId));
       ref.invalidate(ratingsProvider(widget.tastingId));
+      // The reveal is also when the guess is scored, and the points land on
+      // this glass's own rating — which the reveal screen reads. Without this
+      // it goes on showing the unscored draft.
+      ref.invalidate(ratingProvider(item.id));
       if (mounted) {
         context.pushReplacement('/tastings/${widget.tastingId}/reveal');
       }
@@ -267,27 +271,10 @@ class _Progress extends StatelessWidget {
 }
 
 /// The blind glass: a drawn bowl with a little wine in it, and nothing else.
-class _HiddenGlass extends StatefulWidget {
+class _HiddenGlass extends StatelessWidget {
   const _HiddenGlass({required this.position});
 
   final int position;
-
-  @override
-  State<_HiddenGlass> createState() => _HiddenGlassState();
-}
-
-class _HiddenGlassState extends State<_HiddenGlass>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _sweep = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 4500),
-  )..repeat();
-
-  @override
-  void dispose() {
-    _sweep.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -304,24 +291,7 @@ class _HiddenGlassState extends State<_HiddenGlass>
         child: Stack(
           alignment: Alignment.center,
           children: [
-            Positioned.fill(
-              child: AnimatedBuilder(
-                animation: _sweep,
-                builder: (context, _) => FractionalTranslation(
-                  translation: Offset(-1.2 + _sweep.value * 3.2, 0),
-                  child: Container(
-                    width: 60,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [
-                        Colors.transparent,
-                        Colors.white.withValues(alpha: 0.06),
-                        Colors.transparent,
-                      ]),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            const Positioned.fill(child: GlasSweep()),
             Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -352,11 +322,10 @@ class _HiddenGlassState extends State<_HiddenGlass>
                   ),
                 ),
                 const SizedBox(height: 10),
-                Text('Glas #${widget.position}',
+                Text('Glas #$position',
                     style: GlasType.display(34, color: c.nightInk)),
                 const SizedBox(height: 10),
-                Text('Produktet er skjult',
-                    style: GlasType.label(10.5, color: c.nightMuted)),
+                SectionLabel('Produktet er skjult', color: c.nightMuted),
               ],
             ),
           ],

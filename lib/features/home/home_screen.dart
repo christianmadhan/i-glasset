@@ -50,25 +50,19 @@ class HomeScreen extends ConsumerWidget {
               children: [
                 const SectionLabel('Dine tal'),
                 const SizedBox(height: 10),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                StatRow(
                   children: [
-                    Expanded(
-                      child: StatTile(
-                        value: stats.average == null
-                            ? '—'
-                            : formatScore(stats.average!),
-                        label: 'Gennemsnit i år',
-                        valueSize: 32,
-                      ),
+                    StatTile(
+                      value: stats.average == null
+                          ? '—'
+                          : formatScore(stats.average!),
+                      label: 'Gennemsnit i år',
+                      valueSize: 32,
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: StatTile(
-                        value: mostTastedLabel(archive) ?? '—',
-                        label: 'Mest smagt',
-                        valueSize: 20,
-                      ),
+                    StatTile(
+                      value: mostTastedLabel(archive) ?? '—',
+                      label: 'Mest smagt',
+                      valueSize: 20,
                     ),
                   ],
                 ),
@@ -131,8 +125,7 @@ class _NextTastingCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Næste smagning',
-              style: GlasType.label(10.5, color: c.nightMuted)),
+          SectionLabel('Næste smagning', color: c.nightMuted),
           const SizedBox(height: 6),
           Text(tasting.title,
               style: GlasType.display(25, color: c.nightInk, height: 1.2)),
@@ -191,8 +184,7 @@ class _NothingPlannedCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Ingen smagning planlagt',
-              style: GlasType.label(10.5, color: c.nightMuted)),
+          SectionLabel('Ingen smagning planlagt', color: c.nightMuted),
           const SizedBox(height: 6),
           Text('Skal vi åbne en flaske?',
               style: GlasType.display(25, color: c.nightInk, height: 1.2)),

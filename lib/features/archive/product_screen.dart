@@ -106,26 +106,19 @@ class ProductScreen extends ConsumerWidget {
           ],
         ),
 
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        StatRow(
           children: [
-            Expanded(
-              child: StatTile(
-                value: entry.rating.score == null
-                    ? '—'
-                    : scale.format(entry.rating.score!),
-                label: 'Din karakter',
-                valueSize: 24,
-              ),
+            StatTile(
+              value: entry.rating.score == null
+                  ? '—'
+                  : scale.format(entry.rating.score!),
+              label: 'Din karakter',
+              valueSize: 24,
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: StatTile(
-                value:
-                    groupAverage == null ? '—' : scale.format(groupAverage),
-                label: 'Gruppen',
-                valueSize: 24,
-              ),
+            StatTile(
+              value: groupAverage == null ? '—' : scale.format(groupAverage),
+              label: 'Gruppen',
+              valueSize: 24,
             ),
           ],
         ),

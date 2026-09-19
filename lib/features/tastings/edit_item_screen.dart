@@ -207,8 +207,7 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
           children: [
             const BackLink('← Program'),
             const Spacer(),
-            Text('Glas ${current.position}',
-                style: GlasType.label(10.5, color: c.accent)),
+            SectionLabel('Glas ${current.position}', color: c.accent),
           ],
         ),
         Text('Tilføj produkt', style: GlasType.display(28, color: c.ink)),
@@ -220,6 +219,7 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
               height: 150,
               radius: 16,
               caption: 'flaskefoto',
+              subtitle: _uploading ? null : 'Tryk for at tilføje',
               onTap: _uploading ? null : _pickPhoto,
             ),
             if (_uploading)

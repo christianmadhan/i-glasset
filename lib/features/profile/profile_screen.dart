@@ -53,23 +53,14 @@ class ProfileScreen extends ConsumerWidget {
           ],
         ),
 
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        StatRow(
+          gap: 8,
           children: [
-            Expanded(
-              child: StatTile(value: '${stats.products}', label: 'produkter'),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: StatTile(value: '${stats.tastings}', label: 'smagninger'),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: StatTile(
-                value:
-                    stats.average == null ? '—' : formatScore(stats.average!),
-                label: 'gennemsnit',
-              ),
+            StatTile(value: '${stats.products}', label: 'produkter'),
+            StatTile(value: '${stats.tastings}', label: 'smagninger'),
+            StatTile(
+              value: stats.average == null ? '—' : formatScore(stats.average!),
+              label: 'gennemsnit',
             ),
           ],
         ),

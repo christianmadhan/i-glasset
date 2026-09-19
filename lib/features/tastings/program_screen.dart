@@ -54,7 +54,7 @@ class _ProgramScreenState extends ConsumerState<ProgramScreen> {
             const BackLink('← Hjem'),
             const Spacer(),
             if (isHost)
-              Text('Vært', style: GlasType.label(10.5, color: c.accent)),
+              SectionLabel('Vært', color: c.accent),
           ],
         ),
         Column(
@@ -74,7 +74,12 @@ class _ProgramScreenState extends ConsumerState<ProgramScreen> {
           ],
         ),
 
-        _CodePanel(tasting: tasting, isHost: isHost, onOpen: _openLobby),
+        _CodePanel(
+          tasting: tasting,
+          isHost: isHost,
+          openLabel: _openLabel(tasting.status),
+          onOpen: _openLobby,
+        ),
 
         SectionLabel(
           'Rækkefølge',
@@ -130,13 +135,9 @@ class _ProgramScreenState extends ConsumerState<ProgramScreen> {
             ),
           ),
 
-        if (isHost)
+        if (isHost && tasting.status != TastingStatus.finished)
           GlasButton(
-            label: _busy
-                ? 'Åbner…'
-                : tasting.status == TastingStatus.draft
-                    ? 'Start smagning'
-                    : 'Åbn lobby',
+            label: _busy ? 'Åbner…' : _openLabel(tasting.status),
             tone: GlasButtonTone.accent,
             enabled: !_busy && items.isNotEmpty,
             onTap: _openLobby,
@@ -186,13 +187,24 @@ class _ProgramScreenState extends ConsumerState<ProgramScreen> {
     }
   }
 
+  static String _openLabel(TastingStatus status) => switch (status) {
+        TastingStatus.draft => 'Start smagning',
+        TastingStatus.lobby => 'Åbn lobby',
+        // The evening is already pouring: this takes the host back to it
+        // rather than sending the room to the lobby again.
+        TastingStatus.live => 'Tilbage til smagningen',
+        TastingStatus.finished => 'Se opsummering',
+      };
+
   Future<void> _openLobby() async {
     setState(() => _busy = true);
     try {
-      await ref.read(tastingRepositoryProvider).openLobby(widget.tastingId);
+      final tasting =
+          await ref.read(tastingRepositoryProvider).openLobby(widget.tastingId);
       ref.invalidate(tastingProvider(widget.tastingId));
       ref.invalidate(myTastingsProvider);
-      if (mounted) context.push('/tastings/${widget.tastingId}/lobby');
+      final landing = tasting.status == TastingStatus.live ? 'live' : 'lobby';
+      if (mounted) context.push('/tastings/${widget.tastingId}/$landing');
     } on Object catch (error) {
       if (mounted) showGlasError(context, error);
     } finally {
@@ -205,11 +217,13 @@ class _CodePanel extends StatelessWidget {
   const _CodePanel({
     required this.tasting,
     required this.isHost,
+    required this.openLabel,
     required this.onOpen,
   });
 
   final Tasting tasting;
   final bool isHost;
+  final String openLabel;
   final VoidCallback onOpen;
 
   @override
@@ -255,7 +269,7 @@ class _CodePanel extends StatelessWidget {
                   color: c.nightInk,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text('Åbn lobby',
+                child: Text(openLabel,
                     style: GlasType.body(14, color: c.night)),
               ),
             ),

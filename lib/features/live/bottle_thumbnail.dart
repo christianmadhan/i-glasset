@@ -39,6 +39,7 @@ class BottleThumbnail extends ConsumerWidget {
     this.height,
     this.radius = 8,
     this.caption,
+    this.subtitle,
     this.onNight = false,
     this.onTap,
   });
@@ -48,6 +49,11 @@ class BottleThumbnail extends ConsumerWidget {
   final double? height;
   final double radius;
   final String? caption;
+
+  /// The second line under [caption] on the empty placeholder — the design
+  /// uses it to say a tappable frame can be filled.
+  final String? subtitle;
+
   final bool onNight;
   final VoidCallback? onTap;
 
@@ -67,6 +73,7 @@ class BottleThumbnail extends ConsumerWidget {
         height: height,
         radius: radius,
         caption: caption,
+        subtitle: subtitle,
         onNight: onNight,
         onTap: onTap,
       );

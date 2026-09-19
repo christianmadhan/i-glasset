@@ -91,28 +91,22 @@ class _RevealScreenState extends ConsumerState<RevealScreen> {
             Text('Glas $position af ${items.length}',
                 style: GlasType.body(13, color: c.nightMuted)),
             const Spacer(),
-            Text('Afsløret', style: GlasType.label(10.5, color: c.accent)),
+            SectionLabel('Afsløret', color: c.accent),
           ],
         ),
 
         _RevealBody(item: item),
 
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        StatRow(
           children: [
-            Expanded(
-              child: _ScoreBox(
-                value: groupAverage == null ? '—' : scale.format(groupAverage),
-                label: 'Gruppen',
-              ),
+            _ScoreBox(
+              value: groupAverage == null ? '—' : scale.format(groupAverage),
+              label: 'Gruppen',
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _ScoreBox(
-                value: rating?.score == null ? '—' : scale.format(rating!.score!),
-                label: 'Din karakter',
-                highlighted: true,
-              ),
+            _ScoreBox(
+              value: rating?.score == null ? '—' : scale.format(rating!.score!),
+              label: 'Din karakter',
+              highlighted: true,
             ),
           ],
         ),
@@ -318,8 +312,8 @@ class _PointsCard extends StatelessWidget {
               textBaseline: TextBaseline.alphabetic,
               children: [
                 Expanded(
-                  child: Text('Dine gættepoint',
-                      style: GlasType.label(10.5, color: c.nightMuted)),
+                  child: SectionLabel('Dine gættepoint',
+                      color: c.nightMuted),
                 ),
                 Text('${rating.pointsTotal ?? 0}',
                     style: GlasType.display(24, color: c.accent, height: 1)),

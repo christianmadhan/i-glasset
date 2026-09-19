@@ -105,6 +105,11 @@ class _Surface extends StatelessWidget {
   final bool anchorBottom;
   final Widget? bottomBar;
 
+  /// The design is drawn for a phone. Past this the column stops growing and
+  /// centres instead, so a tablet or a landscape phone reads as one page
+  /// rather than lines of text the width of the screen.
+  static const _maxContentWidth = 560.0;
+
   @override
   Widget build(BuildContext context) {
     final column = Column(
@@ -116,6 +121,15 @@ class _Surface extends StatelessWidget {
         ],
       ],
     );
+
+    // Applied outside the column, so a GlasSpacer inside it still has an
+    // unconstrained main axis to grow into.
+    Widget capped(Widget child) => Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: _maxContentWidth),
+            child: child,
+          ),
+        );
 
     return Scaffold(
       backgroundColor: background,
@@ -138,11 +152,14 @@ class _Surface extends StatelessWidget {
                                     padding.vertical)
                                 .clamp(0.0, double.infinity),
                           ),
-                          child: IntrinsicHeight(child: column),
+                          child: capped(IntrinsicHeight(child: column)),
                         ),
                       ),
                     )
-                  : SingleChildScrollView(padding: padding, child: column),
+                  : SingleChildScrollView(
+                      padding: padding,
+                      child: capped(column),
+                    ),
             ),
             ?bottomBar,
           ],
@@ -167,18 +184,35 @@ class GlasSpacer extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 /// The tracked-out monospace label that heads each section.
+///
+/// The uppercasing lives here rather than in the strings, so the copy stays
+/// readable in the source and no screen can forget it.
 class SectionLabel extends StatelessWidget {
-  const SectionLabel(this.text, {super.key, this.color, this.trailing});
+  const SectionLabel(
+    this.text, {
+    super.key,
+    this.color,
+    this.trailing,
+    this.tracking = 0.16,
+  });
 
   final String text;
   final Color? color;
   final Widget? trailing;
 
+  /// Letter spacing as a fraction of the font size. The design runs 0.16
+  /// everywhere except the sign-in lockup, which opens up to 0.18.
+  final double tracking;
+
   @override
   Widget build(BuildContext context) {
     final label = Text(
       text.toUpperCase(),
-      style: GlasType.label(10.5, color: color ?? context.glas.muted),
+      style: GlasType.label(
+        10.5,
+        color: color ?? context.glas.muted,
+        tracking: tracking,
+      ),
     );
     if (trailing == null) return label;
     return Row(
@@ -334,6 +368,10 @@ class GlasList extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
+        // The list's own fill is what shows through the 1px gaps as the rules
+        // between rows; rows must therefore span the full width, or that fill
+        // shows down their sides as well.
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (var i = 0; i < children.length; i++) ...[
             if (i > 0) const SizedBox(height: 1),
@@ -375,6 +413,95 @@ class StatTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The slow light streak that crosses the dark cards — the design's
+/// `glasSweep`, a narrow highlight travelling from -120% to 220% of its own
+/// width.
+///
+/// Meant to go inside a `Positioned.fill`. The [Align] matters: under the tight
+/// constraints `Positioned.fill` hands down, a plain sized box is stretched to
+/// the full width and the streak becomes a hard-edged half-card band.
+class GlasSweep extends StatefulWidget {
+  const GlasSweep({
+    super.key,
+    this.width = 60,
+    this.opacity = 0.06,
+    this.period = const Duration(milliseconds: 4500),
+  });
+
+  final double width;
+  final double opacity;
+  final Duration period;
+
+  @override
+  State<GlasSweep> createState() => _GlasSweepState();
+}
+
+class _GlasSweepState extends State<GlasSweep>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller =
+      AnimationController(vsync: this, duration: widget.period)..repeat();
+  late final Animation<double> _t =
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Align(
+        alignment: Alignment.centerLeft,
+        child: AnimatedBuilder(
+          animation: _t,
+          builder: (context, child) => FractionalTranslation(
+            translation: Offset(-1.2 + _t.value * 3.4, 0),
+            child: child,
+          ),
+          child: SizedBox(
+            width: widget.width,
+            height: double.infinity,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [
+                  Colors.transparent,
+                  Colors.white.withValues(alpha: widget.opacity),
+                  Colors.transparent,
+                ]),
+              ),
+            ),
+          ),
+        ),
+      );
+}
+
+/// A row of equal-width tiles that all take the height of the tallest.
+///
+/// The height matching needs [IntrinsicHeight]: every screen puts these inside
+/// a scroll view, where the cross axis of a bare `Row` is unbounded and
+/// `CrossAxisAlignment.stretch` has nothing to stretch to — which fails layout
+/// for the row *and every sibling below it*, so the rest of the screen silently
+/// stops being laid out. Going through here means no screen has to remember.
+class StatRow extends StatelessWidget {
+  const StatRow({super.key, required this.children, this.gap = 10});
+
+  final List<Widget> children;
+  final double gap;
+
+  @override
+  Widget build(BuildContext context) => IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < children.length; i++) ...[
+              if (i > 0) SizedBox(width: gap),
+              Expanded(child: children[i]),
+            ],
+          ],
+        ),
+      );
 }
 
 /// The round monogram used for people and groups.
@@ -806,6 +933,11 @@ class GlasSlider extends StatelessWidget {
           onHorizontalDragUpdate: (d) => _setFrom(d.localPosition.dx, width),
           child: Container(
             height: height,
+            // The track is the full bar, always. Without this the stack
+            // shrink-wraps to the fill under any parent that hands down loose
+            // width — a plain Column does — and the whole slider ends up as a
+            // short centred pill instead of a bar filled from the left.
+            width: double.infinity,
             decoration: BoxDecoration(
               color: track ?? c.accentSoft,
               borderRadius: BorderRadius.circular(radius),
@@ -814,6 +946,8 @@ class GlasSlider extends StatelessWidget {
             child: Stack(
               children: [
                 FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  heightFactor: 1,
                   widthFactor: fraction == 0 ? 0.001 : fraction,
                   child: Container(color: c.accent.withValues(alpha: 0.85)),
                 ),

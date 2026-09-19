@@ -160,8 +160,7 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('I nærheden',
-                  style: GlasType.label(10.5, color: c.nightMuted)),
+              SectionLabel('I nærheden', color: c.nightMuted),
               const SizedBox(height: 10),
               for (final tasting in nearby) ...[
                 _NearbyRow(

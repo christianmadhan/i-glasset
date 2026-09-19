@@ -1,21 +1,26 @@
-# Generates every launcher size from one 1024px source.
+# Generates every launcher size from the brand artwork.
 #
-# The source is produced by `tool/generate_app_icon_test.dart`, which paints the
-# same glass the app draws in its header — so the home-screen icon and the mark
-# inside the app are literally the same drawing.
+# The source is the same drawing the app shows in its header and on the login
+# screen (`AppMark` renders `assets/images/app_mark.png`, the 384px cut of it).
 #
-# When the real brand artwork arrives, point image_path at it and re-run:
+# Re-run after changing the artwork:
 #   dart run flutter_launcher_icons
 flutter_launcher_icons:
   image_path: "assets/icon/app_icon.png"
 
   ios: true
-  # iOS rejects any alpha channel in the marketing icon, so the source is
-  # painted edge to edge on the brand burgundy with no rounding of its own —
-  # iOS applies the mask.
+  # iOS rejects any alpha channel in the marketing icon. The artwork's corners
+  # are transparent, so they are flattened onto the tile's own burgundy rather
+  # than the default white — iOS then applies its own mask over the top.
   remove_alpha_ios: true
+  background_color_ios: "#721B31"
 
   android: true
-  adaptive_icon_background: "#8C1D40"
+  # The adaptive background matches the tile, so the artwork's rounded corners
+  # disappear into it and any mask shape reads as solid burgundy.
+  adaptive_icon_background: "#721B31"
   adaptive_icon_foreground: "assets/icon/app_icon.png"
+  # The figures span ~69% of the tile; the adaptive mask only guarantees the
+  # middle 66%. Insetting pulls them inside it so no head gets clipped.
+  adaptive_icon_foreground_inset: 16
   min_sdk_android: 21

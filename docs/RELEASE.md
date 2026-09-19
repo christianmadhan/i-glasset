@@ -119,11 +119,5 @@ Review takes days; these are the things that fail late.
 
 ## Known gaps before 1.0
 
-- **The app icon is a placeholder.** It's a clean icon and it will pass review,
-  but it is not the brand artwork. `assets/i-glasset-app-icon.png` in the Claude
-  Design project exceeds the design API's 256 KiB per-file limit and could only
-  be fetched truncated. To swap it in: drop the full PNG at
-  `assets/icon/app_icon.png`, run `dart run flutter_launcher_icons`, and replace
-  the body of `AppMark` with an `Image.asset`.
 - **Android release signing** is not configured — `android/app/build.gradle.kts`
   still signs release with the debug key. Needed only when you go to Play.

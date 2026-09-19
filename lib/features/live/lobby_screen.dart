@@ -59,7 +59,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
           children: [
             BackLink('← Forlad', color: c.nightMuted, onTap: _leave),
             const Spacer(),
-            Text('Lobby', style: GlasType.label(10.5, color: c.nightMuted)),
+            SectionLabel('Lobby', color: c.nightMuted),
           ],
         ),
 

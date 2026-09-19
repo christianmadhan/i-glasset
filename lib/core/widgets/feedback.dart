@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' show ClientException;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../data/peer/peer_protocol.dart';
+import '../../data/repositories/tasting_repository.dart';
 import '../theme/glas_theme.dart';
 
 /// An error, in the app's own voice.
@@ -13,6 +15,11 @@ import '../theme/glas_theme.dart';
 /// to show. Anything else — a socket failure, a decoding error — becomes a
 /// plain line rather than a stack trace shown to someone mid-tasting.
 String describeError(Object error) => switch (error) {
+      // The app's own exceptions already carry the sentence to show — the
+      // refused join code, the glass that has already been poured. Falling
+      // through to the catch-all below would throw all of that away.
+      TastingException(:final message) => message,
+      PeerProtocolException(:final message) => message,
       PostgrestException(:final message) => message,
       AuthException(:final message) => message,
       StorageException(:final message) => message,

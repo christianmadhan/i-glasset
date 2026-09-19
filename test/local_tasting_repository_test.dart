@@ -82,6 +82,26 @@ void main() {
       expect(rows, hasLength(1));
       expect(rows.single['title'], 'Italienske rødvine');
     });
+
+    test('reopening a live evening does not send the room back to the lobby',
+        () async {
+      // The host taps the same button to get back in after closing the app;
+      // it must not rewind an evening that is already pouring.
+      final tasting = await aTasting();
+      await repo.createItem(tastingId: tasting.id, position: 1);
+      await repo.updateTasting(tasting.id, status: TastingStatus.live);
+
+      // openLobby goes on to advertise over Bonjour, which has no platform
+      // channel here. The status decision is made before that, so letting the
+      // advertisement fail still exercises the rule.
+      try {
+        await repo.openLobby(tasting.id);
+      } on Object {
+        // no mDNS in a unit test
+      }
+
+      expect((await repo.byId(tasting.id)).status, TastingStatus.live);
+    });
   });
 
   group('the blind', () {
@@ -143,7 +163,23 @@ void main() {
 
       final asHost = await repo.items(tasting.id);
       expect(asHost.single.name, 'Barbaresco 2021');
-      expect(asHost.single.isRevealed, isTrue);
+    });
+
+    test('seeing a glass is not the same as having revealed it', () async {
+      // The host reads every field from the start, but `isRevealed` is the
+      // room's state — the host's own screens count off poured glasses with
+      // it, so it must not run ahead of the reveal.
+      final tasting = await aTasting();
+      final item = await repo.createItem(tastingId: tasting.id, position: 1);
+      await repo.saveItem(item.copyWith(name: 'Barbaresco 2021'));
+
+      expect((await repo.items(tasting.id)).single.isRevealed, isFalse);
+      expect((await repo.hostItems(tasting.id)).single.isRevealed, isFalse);
+
+      await repo.revealItem(item.id);
+
+      expect((await repo.items(tasting.id)).single.isRevealed, isTrue);
+      expect((await repo.hostItems(tasting.id)).single.isRevealed, isTrue);
     });
   });
 
