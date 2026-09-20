@@ -6,6 +6,7 @@ import '../../core/providers.dart';
 import '../../core/theme/glas_theme.dart';
 import '../../core/utils/formatting.dart';
 import '../../core/widgets/glas_widgets.dart';
+import '../../core/widgets/huce_mark.dart';
 import '../../data/models/group.dart';
 import '../../data/models/tasting.dart';
 
@@ -34,9 +35,16 @@ class HomeScreen extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(22, 20, 22, 24),
         gap: 26,
         children: [
-          Text(
-            greeting(profile?.firstName),
-            style: GlasType.display(30, color: c.ink),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const HuceLockup(),
+              const SizedBox(height: 18),
+              Text(
+                greeting(profile?.firstName),
+                style: GlasType.display(30, color: c.ink),
+              ),
+            ],
           ),
 
           if (next != null)

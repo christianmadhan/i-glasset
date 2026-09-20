@@ -7,6 +7,7 @@ import '../../core/theme/glas_theme.dart';
 import '../../core/widgets/app_mark.dart';
 import '../../core/widgets/feedback.dart';
 import '../../core/widgets/glas_widgets.dart';
+import '../../core/widgets/huce_mark.dart';
 
 /// "Log ind".
 ///
@@ -100,6 +101,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const HuceLockup(),
+            const SizedBox(height: 28),
             const AppMark(size: 72, radius: 18),
             const SizedBox(height: 16),
             Text('I Glasset',

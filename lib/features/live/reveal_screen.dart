@@ -13,6 +13,7 @@ import '../../data/models/tasting_item.dart';
 import 'bottle_thumbnail.dart';
 import 'media_sync_controller.dart';
 import 'rating_controller.dart';
+import 'tasting_exit.dart';
 
 /// "Afsløring" — what was actually in the glass, how the room scored it, and
 /// what your guess was worth.
@@ -86,12 +87,24 @@ class _RevealScreenState extends ConsumerState<RevealScreen> {
       padding: const EdgeInsets.fromLTRB(22, 20, 22, 26),
       gap: 20,
       children: [
-        Row(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Glas $position af ${items.length}',
-                style: GlasType.body(13, color: c.nightMuted)),
-            const Spacer(),
-            SectionLabel('Afsløret', color: c.accent),
+            Row(
+              children: [
+                BackLink(
+                  '← Forlad',
+                  color: c.nightMuted,
+                  onTap: () => leaveTasting(context, ref, widget.tastingId),
+                ),
+                const SizedBox(width: 14),
+                Text('Glas $position af ${items.length}',
+                    style: GlasType.body(13, color: c.nightMuted)),
+                const Spacer(),
+                SectionLabel('Afsløret', color: c.accent),
+              ],
+            ),
+            GuestConnectionNote(isHost: isHost),
           ],
         ),
 
@@ -112,7 +125,7 @@ class _RevealScreenState extends ConsumerState<RevealScreen> {
         ),
 
         if (tasting.config.guessOn && rating != null)
-          _PointsCard(rating: rating, config: tasting.config),
+          _PointsCard(rating: rating, item: item, config: tasting.config),
 
         const SizedBox(height: 4),
 
@@ -136,12 +149,20 @@ class _RevealScreenState extends ConsumerState<RevealScreen> {
                 enabled: !_busy,
                 onTap: () => _advance(position, items.length),
               )
+            else if (isLast)
+              // Everything is on this phone already; nobody has to wait for
+              // the host's tap to close the evening.
+              GlasButton(
+                label: 'Se opsummeringen',
+                tone: GlasButtonTone.accent,
+                onTap: () => context.pushReplacement(
+                  '/tastings/${widget.tastingId}/summary',
+                ),
+              )
             else
               Center(
                 child: Text(
-                  isLast
-                      ? 'Værten afslutter smagningen'
-                      : 'Værten går videre til glas ${position + 1}',
+                  'Værten går videre til glas ${position + 1}',
                   style: GlasType.body(13, color: c.nightMuted),
                 ),
               ),
@@ -283,15 +304,21 @@ class _ScoreBox extends StatelessWidget {
 /// the server — `reveal_item()` settles them in the same statement that reveals
 /// the glass, so they can't be argued with.
 class _PointsCard extends StatelessWidget {
-  const _PointsCard({required this.rating, required this.config});
+  const _PointsCard({
+    required this.rating,
+    required this.item,
+    required this.config,
+  });
 
   final Rating rating;
+  final TastingItem item;
   final TastingConfig config;
 
   @override
   Widget build(BuildContext context) {
     final c = context.glas;
-    final rows = config.activeCategories
+    final rows = config
+        .activeCategoriesFor(item)
         .map((category) => (category: category, points: rating.points[category]))
         .where((row) => row.points != null)
         .toList();
@@ -318,7 +345,7 @@ class _PointsCard extends StatelessWidget {
                 Text('${rating.pointsTotal ?? 0}',
                     style: GlasType.display(24, color: c.accent, height: 1)),
                 const SizedBox(width: 6),
-                Text('af ${config.pointsInPlay}',
+                Text('af ${config.pointsInPlayFor(item)}',
                     style: GlasType.body(12, color: c.nightMuted)),
               ],
             ),

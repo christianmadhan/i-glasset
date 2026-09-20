@@ -68,11 +68,8 @@ class _GuessSheetScreenState extends ConsumerState<GuessSheetScreen> {
     }
 
     final config = tasting.config;
-    final position = items
-            ?.where((i) => i.id == widget.itemId)
-            .firstOrNull
-            ?.position ??
-        tasting.currentPosition;
+    final item = items?.where((i) => i.id == widget.itemId).firstOrNull;
+    final position = item?.position ?? tasting.currentPosition;
 
     return PopScope(
       // Whatever is on screen is saved as soon as the sheet closes, however
@@ -103,8 +100,8 @@ class _GuessSheetScreenState extends ConsumerState<GuessSheetScreen> {
               const SizedBox(height: 5),
               Text(
                 config.guessOn
-                    ? '${config.pointsInPlay} point i spil pr. glas. '
-                        'Alt er valgfrit — gæt kun det, du tør.'
+                    ? '${config.pointsInPlayFor(item)} point i spil på dette glas. '
+                        'Gæt det, du tør — det, du lader stå, giver bare 0.'
                     : 'Ingen gættekonkurrence i denne smagning. '
                         'Skriv dine egne noter.',
                 style: GlasType.body(13, color: c.muted, height: 1.5),
@@ -217,7 +214,7 @@ class _GuessSheetScreenState extends ConsumerState<GuessSheetScreen> {
               },
             ),
 
-          if (config.isOn(GuessCategory.ekstra))
+          if (config.isOn(GuessCategory.ekstra) && item?.hasExtra == true)
             _ExtraCard(
               rule: config.ruleText(GuessCategory.ekstra),
               options: [...Vocabulary.extras, ..._customExtras],
@@ -245,7 +242,7 @@ class _GuessSheetScreenState extends ConsumerState<GuessSheetScreen> {
           ),
 
           GlasButton(
-            label: 'Tilbage til glasset',
+            label: 'Færdig med gættet',
             onTap: () => context.pop(),
           ),
         ],

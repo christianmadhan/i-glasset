@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:i_glasset/data/models/tasting_config.dart';
+import 'package:i_glasset/data/models/tasting_item.dart';
 
 void main() {
   group('TastingConfig', () {
@@ -49,6 +50,23 @@ void main() {
       expect(config.pointsInPlay, 7);
       expect(config.activeCategories,
           [GuessCategory.duft, GuessCategory.drue]);
+    });
+
+    test('the extraordinary only counts on a glass that has one', () {
+      const config = TastingConfig();
+      // Nothing marked: 26 minus the three for the extraordinary.
+      expect(config.pointsInPlayFor(null), 23);
+      expect(config.activeCategoriesFor(null),
+          isNot(contains(GuessCategory.ekstra)));
+
+      // A guest's redacted glass says only that there *is* one.
+      final blind = TastingItem.fromJson({
+        'id': 'i', 'tasting_id': 't', 'position': 1,
+        'is_revealed': false, 'has_extra': true,
+      });
+      expect(blind.extra, isNull);
+      expect(blind.hasExtra, isTrue);
+      expect(config.pointsInPlayFor(blind), 26);
     });
 
     test('turning the whole game off silences every category', () {

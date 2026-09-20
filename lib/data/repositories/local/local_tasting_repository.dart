@@ -173,7 +173,12 @@ class LocalTastingRepository
       (row) => itemIds.containsKey(row['tasting_item_id']),
     );
 
-    // The same visibility rule the Supabase policy applies.
+    // The same visibility rule the Supabase policy applies — including that
+    // the host reads everything. The host has to see who has sent theirs to
+    // know when to pour the reveal.
+    if (tasting.hostId == _session.userId) {
+      return [for (final row in rows) Rating.fromJson(row)];
+    }
     final showOthers = tasting.config.showOthers;
     return [
       for (final row in rows)
@@ -514,8 +519,9 @@ class LocalTastingRepository
 
     _touch(tastingId);
     await _host.broadcastSync();
-    // Everyone has what they need; take the evening off the air.
-    await _host.stop();
+    // Off the air for newcomers, but still answering: a phone that lost the
+    // socket during the last glass can come back for the final picture.
+    await _host.stopAdvertising();
     return _hydrate(row!);
   }
 
@@ -654,10 +660,19 @@ class LocalTastingRepository
     if (status == TastingStatus.draft) {
       return 'Smagningen er ikke åbnet endnu.';
     }
-    if (status == TastingStatus.finished) return 'Smagningen er slut.';
-
     final userId = profile['id'] as String?;
     if (userId == null) return 'Din profil mangler et id.';
+
+    final tastingId = row['id'] as String;
+    final already = await _store.find(
+      LocalStore.participants,
+      (p) => p['tasting_id'] == tastingId && p['user_id'] == userId,
+    );
+    // Over means over for newcomers; someone who was here may still come back
+    // for what they missed.
+    if (status == TastingStatus.finished && already == null) {
+      return 'Smagningen er slut.';
+    }
 
     // Remember who they are, so their name shows in the lobby and their
     // ratings have an owner.
@@ -669,11 +684,6 @@ class LocalTastingRepository
           profile['created_at'] ?? DateTime.now().toUtc().toIso8601String(),
     });
 
-    final tastingId = row['id'] as String;
-    final already = await _store.find(
-      LocalStore.participants,
-      (p) => p['tasting_id'] == tastingId && p['user_id'] == userId,
-    );
     if (already == null) {
       await _store.upsert(LocalStore.participants, {
         'id': _uuid.v4(),
@@ -689,8 +699,17 @@ class LocalTastingRepository
   }
 
   @override
-  Future<TastingSnapshot> snapshotFor(String userId) async {
-    final tasting = await _hostedTasting();
+  Future<TastingSnapshot> snapshotFor(
+    String userId, {
+    required String joinCode,
+  }) async {
+    final tasting = await _store.find(
+      LocalStore.tastings,
+      (row) =>
+          row['join_code'] == joinCode.toUpperCase() &&
+          row['host_id'] == _session.userId &&
+          row['status'] != TastingStatus.draft.wire,
+    );
     if (tasting == null) {
       throw const TastingException('Ingen smagning er i gang.');
     }
@@ -752,8 +771,13 @@ class LocalTastingRepository
     final item = await _store.byId(LocalStore.items, itemId);
     if (item == null) return;
 
-    final tasting = await _hostedTasting();
-    if (tasting == null || item['tasting_id'] != tasting['id']) return;
+    final tasting =
+        await _store.byId(LocalStore.tastings, item['tasting_id'] as String);
+    if (tasting == null ||
+        tasting['host_id'] != _session.userId ||
+        tasting['status'] == TastingStatus.draft.wire) {
+      return;
+    }
 
     // Edits stop at the reveal, as the Supabase policy also insists.
     if (item['revealed_at'] != null) return;
@@ -775,8 +799,11 @@ class LocalTastingRepository
   }
 
   @override
-  Future<void> onLeave(String userId) async {
-    final tasting = await _hostedTasting();
+  Future<void> onLeave(String userId, {required String joinCode}) async {
+    final tasting = await _store.find(
+      LocalStore.tastings,
+      (row) => row['join_code'] == joinCode.toUpperCase(),
+    );
     if (tasting == null) return;
     _touch(tasting['id'] as String);
   }
@@ -836,12 +863,28 @@ class LocalTastingRepository
       snapshot.participants,
     );
 
+    // Everyone else's ratings are the host's to state. Our own we authored,
+    // and one written while the socket was down is not in this snapshot yet —
+    // so those stay, and the host's echo replaces them by id when it comes.
+    final me = _session.userId;
     final itemIds = {for (final row in snapshot.items) row['id'] as String};
-    await _store.replaceWhere(
+    await _store.deleteWhere(
       LocalStore.ratings,
-      (row) => itemIds.contains(row['tasting_item_id']),
-      snapshot.ratings,
+      (row) =>
+          itemIds.contains(row['tasting_item_id']) && row['user_id'] != me,
     );
+    for (final row in snapshot.ratings) {
+      if (row['user_id'] == me) {
+        await _store.deleteWhere(
+          LocalStore.ratings,
+          (r) =>
+              r['tasting_item_id'] == row['tasting_item_id'] &&
+              r['user_id'] == me &&
+              r['id'] != row['id'],
+        );
+      }
+      await _store.upsert(LocalStore.ratings, row);
+    }
 
     _touch(tastingId);
 
@@ -887,6 +930,35 @@ class LocalTastingRepository
     // Nothing to undo: the mirror on disk is still good, it just stops moving.
   }
 
+  @override
+  Future<void> onConnected() async {
+    // Whatever we rated while the socket was down went nowhere. The host
+    // upserts by id, so sending all of ours again is harmless.
+    final code = _guest.joinCode;
+    if (code == null) return;
+    final tasting = await _store.find(
+      LocalStore.tastings,
+      (row) => row['join_code'] == code,
+    );
+    if (tasting == null) return;
+    final itemIds = {
+      for (final row in await _store.where(
+        LocalStore.items,
+        (row) => row['tasting_id'] == tasting['id'],
+      ))
+        row['id'] as String,
+    };
+    final mine = await _store.where(
+      LocalStore.ratings,
+      (row) =>
+          row['user_id'] == _session.userId &&
+          itemIds.contains(row['tasting_item_id']),
+    );
+    for (final row in mine) {
+      _guest.sendRating(row);
+    }
+  }
+
   // =========================================================================
   // internals
   // =========================================================================
@@ -914,6 +986,11 @@ class LocalTastingRepository
         'position': row['position'],
         'is_revealed': false,
         'revealed_at': null,
+        // A yes/no, never the value: it decides whether the guess sheet asks.
+        // A guest's own store already holds the redacted row, so the flag it
+        // was sent is kept rather than recomputed from an `extra` it never had.
+        'has_extra': row['has_extra'] as bool? ??
+            (row['extra'] as String?)?.isNotEmpty == true,
         'created_at': row['created_at'],
       };
     }
@@ -978,23 +1055,6 @@ class LocalTastingRepository
     return tasting;
   }
 
-  Future<Map<String, dynamic>?> _hostedTasting() async {
-    final userId = _session.userId;
-    if (userId == null) return null;
-
-    final rows = await _store.where(
-      LocalStore.tastings,
-      (row) =>
-          row['host_id'] == userId &&
-          row['status'] != TastingStatus.draft.wire &&
-          row['status'] != TastingStatus.finished.wire,
-    );
-    if (rows.isEmpty) return null;
-
-    rows.sort((a, b) =>
-        (b['created_at'] as String).compareTo(a['created_at'] as String));
-    return rows.first;
-  }
 
   /// Six characters, and not one already in use on this device.
   Future<String> _freeJoinCode() async {

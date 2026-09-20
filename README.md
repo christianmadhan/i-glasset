@@ -85,19 +85,20 @@ only after that glass is revealed. Old tastings work with no network at all.
 
 ## The mark
 
-The brand artwork ships as `assets/icon/app_icon.png` (1024px, the launcher
-source) and `assets/images/app_mark.png` (384px, what `AppMark` draws in the
-header and on the sign-in screen) — one drawing in both places. Regenerate the
-launcher sizes with:
+The icon is drawn in the HUCE family idiom — the same one SmartInkøb wears: a
+dark, glowing ground, the initial letter in the brand serif (Libre Caslon
+Text), the family leaf off its shoulder. Here the ground is the cellar
+burgundy and the leaf is gold. `HuceLockup` ("HUCE | I Glasset" with the
+leaf) opens every tab screen, the way "HUCE | SmartInkøb" does over there.
+
+It ships as `assets/icon/app_icon.png` (1024px, the iOS and legacy launcher
+source), `assets/icon/adaptive_*.png` (the same drawing split into Android's
+background and foreground layers) and `assets/images/app_mark.png` (384px, what
+`AppMark` draws on the sign-in screen). Regenerate the launcher sizes with:
 
 ```bash
 dart run flutter_launcher_icons
 ```
-
-The launcher source is flattened edge to edge on the tile's own burgundy: both
-platforms mask their own corners, and the artwork's rounded edge carries a
-stray green rim that would otherwise show. The Android adaptive foreground is
-inset 16% so the outer figures clear a circular mask.
 
 ## Known gaps
 

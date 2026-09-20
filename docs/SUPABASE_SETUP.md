@@ -4,6 +4,7 @@ Two SQL files do the real work; the rest is dashboard clicking.
 
 - `supabase/migrations/0001_init.sql` — tables, the blind-safe view, RPCs, scoring, RLS, realtime
 - `supabase/migrations/0002_storage.sql` — the `tasting-media` bucket and its policies
+- `supabase/migrations/0003_optional_extra.sql` — "Det ekstraordinære" only counts on glasses that have one; the view tells guests whether a blind glass does
 
 ---
 
@@ -20,6 +21,7 @@ Two SQL files do the real work; the rest is dashboard clicking.
 
 1. **SQL Editor** → **New query** → paste all of `0001_init.sql` → **Run**.
 2. New query → paste `0002_storage.sql` → **Run**.
+3. New query → paste `0003_optional_extra.sql` → **Run**.
 
 **CLI route** (preferred once you have more than one environment):
 

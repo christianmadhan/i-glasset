@@ -119,7 +119,7 @@ void main() {
       await repo.updateTasting(tasting.id, status: TastingStatus.lobby);
 
       final guestId = await _addGuest(store, repo, tasting.joinCode);
-      final snapshot = await repo.snapshotFor(guestId);
+      final snapshot = await repo.snapshotFor(guestId, joinCode: tasting.joinCode);
 
       final sent = snapshot.items.single;
       expect(sent['position'], 1);
@@ -147,7 +147,7 @@ void main() {
       final guestId = await _addGuest(store, repo, tasting.joinCode);
       await repo.revealItem(item.id);
 
-      final sent = (await repo.snapshotFor(guestId)).items.single;
+      final sent = (await repo.snapshotFor(guestId, joinCode: tasting.joinCode)).items.single;
       expect(sent['is_revealed'], isTrue);
       expect(sent['name'], 'Barbaresco 2021');
       expect(sent['grape'], 'Nebbiolo');
@@ -304,7 +304,7 @@ void main() {
       expect(refusal, 'Smagningen er ikke åbnet endnu.');
     });
 
-    test('turns away a tasting that is over', () async {
+    test('turns away a newcomer once the tasting is over', () async {
       final tasting = await aTasting();
       await repo.updateTasting(tasting.id, status: TastingStatus.finished);
       final refusal = await repo.admit(
@@ -312,6 +312,27 @@ void main() {
         profile: {'id': 'u2', 'display_name': 'Sofie'},
       );
       expect(refusal, 'Smagningen er slut.');
+    });
+
+    test('lets someone who was in the room back in after it is over',
+        () async {
+      // Their phone lost the socket during the last glass; the final picture
+      // should still be theirs to fetch.
+      final tasting = await aTasting();
+      await repo.updateTasting(tasting.id, status: TastingStatus.lobby);
+      final guestId = await _addGuest(store, repo, tasting.joinCode);
+      await repo.updateTasting(tasting.id, status: TastingStatus.finished);
+
+      final refusal = await repo.admit(
+        joinCode: tasting.joinCode,
+        profile: {'id': guestId, 'display_name': 'Sofie'},
+      );
+      expect(refusal, isNull);
+      expect(
+        (await repo.snapshotFor(guestId, joinCode: tasting.joinCode))
+            .tasting['status'],
+        'finished',
+      );
     });
 
     test('lets an open room in, and remembers who arrived', () async {

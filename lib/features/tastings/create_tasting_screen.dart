@@ -315,7 +315,8 @@ class _CreateTastingScreenState extends ConsumerState<CreateTastingScreen> {
             const SizedBox(height: 12),
             SwitchRow(
               title: 'Gæt om point',
-              subtitle: '${_config.pointsInPlay} point i spil pr. glas',
+              subtitle: '${_config.pointsInPlayFor(null)} point i spil pr. glas'
+                  '${_config.isOn(GuessCategory.ekstra) ? ' · +${_config.pointsFor(GuessCategory.ekstra)} på et glas med noget særligt' : ''}',
               value: _config.guessOn,
               onChanged: (v) =>
                   setState(() => _config = _config.copyWith(guessOn: v)),
@@ -325,7 +326,8 @@ class _CreateTastingScreenState extends ConsumerState<CreateTastingScreen> {
               GlasList(
                 children: [
                   for (final category in GuessCategory.values)
-                    _CategoryRow(
+                    if (category != GuessCategory.ekstra)
+                      _CategoryRow(
                       category: category,
                       rule: _config.cats[category]!,
                       onChanged: (rule) => setState(
@@ -336,7 +338,10 @@ class _CreateTastingScreenState extends ConsumerState<CreateTastingScreen> {
               const SizedBox(height: 12),
               Text(
                 'Duft og smag giver 1 point pr. ramt note op til maks. '
-                'Land og region deler kategoriens point.',
+                'Land og region deler kategoriens point. Det ekstraordinære '
+                'er ikke en fast kategori: har værten markeret noget særligt '
+                'ved et glas, kan der gættes på det for '
+                '${_config.pointsFor(GuessCategory.ekstra)} point ekstra.',
                 style: GlasType.body(12.5, color: c.muted, height: 1.5),
               ),
             ],

@@ -6,6 +6,7 @@ import '../../core/providers.dart';
 import '../../core/theme/glas_theme.dart';
 import '../../core/widgets/feedback.dart';
 import '../../core/widgets/glas_widgets.dart';
+import '../../core/widgets/huce_mark.dart';
 import '../../data/models/group.dart';
 import '../home/home_screen.dart' show GroupRow;
 
@@ -40,7 +41,14 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
     return PaperScreen(
       padding: const EdgeInsets.fromLTRB(22, 20, 22, 24),
       children: [
-        Text('Grupper', style: GlasType.display(29, color: c.ink)),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const HuceLockup(),
+            const SizedBox(height: 18),
+            Text('Grupper', style: GlasType.display(29, color: c.ink)),
+          ],
+        ),
         GlasField(
           hint: 'Søg efter navn eller kategori',
           controller: _search,

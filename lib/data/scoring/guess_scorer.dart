@@ -16,7 +16,8 @@ import '../models/tasting_item.dart';
 /// * **årgang** — exact is full, within 2 years is 1 point
 /// * **land og region** — the country is worth the category's points minus two
 ///   (never less than one); the region takes the remainder
-/// * **ekstra** — all or nothing
+/// * **ekstra** — all or nothing, and only on a glass the host marked something
+///   special about; on any other glass the category is simply not in play
 ///
 /// Only the host runs this, and only at reveal. A guest's device never scores
 /// its own guess, exactly as the database never let it.
@@ -31,8 +32,7 @@ class GuessScorer {
     final rows = <GuessCategory, ({int got, int max})>{};
     var total = 0;
 
-    for (final category in GuessCategory.values) {
-      if (!config.isOn(category)) continue;
+    for (final category in config.activeCategoriesFor(item)) {
 
       final rule = config.cats[category]!;
       final max = rule.points;

@@ -7,6 +7,7 @@ import '../../core/providers.dart';
 import '../../core/theme/glas_theme.dart';
 import '../../core/utils/formatting.dart';
 import '../../core/widgets/glas_widgets.dart';
+import '../../core/widgets/huce_mark.dart';
 import '../../data/repositories/tasting_repository.dart';
 import '../live/bottle_thumbnail.dart';
 
@@ -28,6 +29,8 @@ class TopProductsScreen extends ConsumerWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const HuceLockup(),
+            const SizedBox(height: 18),
             Text('Mine topsmagninger',
                 style: GlasType.display(29, color: c.ink)),
             const SizedBox(height: 5),

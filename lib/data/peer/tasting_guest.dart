@@ -147,6 +147,10 @@ abstract interface class GuestDelegate {
 
   /// The host turned us away, or the evening ended.
   void onDisconnected(String? reason);
+
+  /// The welcome has landed and the mirror is fresh. Anything this device did
+  /// while the socket was down (a rating sent into the void) goes again now.
+  Future<void> onConnected();
 }
 
 enum GuestState { idle, connecting, connected, disconnected }
@@ -169,6 +173,13 @@ class TastingGuest {
   final _stateController = StreamController<GuestState>.broadcast();
   GuestState _state = GuestState.idle;
 
+  /// Set from [connect] until [disconnect]. A socket that dies while it is set
+  /// — the phone locked, the wi-fi blinked — is redialled rather than left for
+  /// dead, because on iOS that is the normal course of an evening.
+  bool _wantConnected = false;
+  Timer? _retry;
+  int _attempts = 0;
+
   Stream<GuestState> get states => _stateController.stream;
   GuestState get state => _state;
   bool get isConnected => _state == GuestState.connected;
@@ -181,14 +192,21 @@ class TastingGuest {
     required String joinCode,
     required Map<String, dynamic> profile,
   }) async {
-    await disconnect();
+    await _closeSocket();
 
     _host = host;
     _joinCode = joinCode.toUpperCase();
     _profile = profile;
+    _wantConnected = true;
     _setState(GuestState.connecting);
 
-    final socket = await _dial(host);
+    final Socket socket;
+    try {
+      socket = await _dial(host);
+    } on Object {
+      _setState(GuestState.disconnected);
+      rethrow;
+    }
     _socket = socket;
 
     final admitted = Completer<void>();
@@ -204,8 +222,8 @@ class TastingGuest {
           debugPrint('I Glasset guest: $error');
         }
       },
-      onError: (Object error) => _dropped('$error', admitted),
-      onDone: () => _dropped(null, admitted),
+      onError: (Object error) => _dropped(socket, '$error', admitted),
+      onDone: () => _dropped(socket, null, admitted),
       cancelOnError: true,
     );
 
@@ -220,7 +238,8 @@ class TastingGuest {
     await admitted.future.timeout(
       const Duration(seconds: 10),
       onTimeout: () {
-        disconnect();
+        _closeSocket();
+        _setState(GuestState.disconnected);
         throw const PeerProtocolException(
           'Værten svarer ikke. Er I på det samme wi-fi?',
         );
@@ -268,7 +287,16 @@ class TastingGuest {
     );
   }
 
+  /// Leaves the room on purpose. Nothing will redial after this.
   Future<void> disconnect() async {
+    _wantConnected = false;
+    _retry?.cancel();
+    _retry = null;
+    await _closeSocket();
+    if (_state != GuestState.idle) _setState(GuestState.disconnected);
+  }
+
+  Future<void> _closeSocket() async {
     final socket = _socket;
     _socket = null;
     if (socket != null) {
@@ -281,7 +309,6 @@ class TastingGuest {
       }
       socket.destroy();
     }
-    if (_state != GuestState.idle) _setState(GuestState.disconnected);
   }
 
   /// Reconnects to the host we were last talking to — used when the app comes
@@ -305,7 +332,10 @@ class TastingGuest {
     switch (message.type) {
       case PeerMessageType.welcome:
         _setState(GuestState.connected);
+        _retry?.cancel();
+        _retry = null;
         await delegate.onSnapshot(TastingSnapshot.fromJson(message.payload));
+        await delegate.onConnected();
         if (!admitted.isCompleted) admitted.complete();
 
       case PeerMessageType.sync:
@@ -341,7 +371,10 @@ class TastingGuest {
     }
   }
 
-  void _dropped(String? reason, Completer<void> admitted) {
+  void _dropped(Socket died, String? reason, Completer<void> admitted) {
+    // A socket we already replaced closing late must not knock out its
+    // successor.
+    if (!identical(_socket, died)) return;
     _socket = null;
     if (!admitted.isCompleted) {
       admitted.completeError(
@@ -350,6 +383,28 @@ class TastingGuest {
     }
     _setState(GuestState.disconnected);
     delegate.onDisconnected(reason);
+    _scheduleRetry();
+  }
+
+  /// Redials every few seconds for a couple of minutes — long enough for a
+  /// phone to be unlocked and the wi-fi to come back, short enough not to
+  /// hammer a host that has genuinely gone home.
+  void _scheduleRetry() {
+    if (!_wantConnected || _host == null || _retry != null) return;
+    _attempts = 0;
+    _retry = Timer.periodic(const Duration(seconds: 3), (timer) async {
+      if (!_wantConnected || isConnected || ++_attempts > 40) {
+        timer.cancel();
+        if (identical(_retry, timer)) _retry = null;
+        return;
+      }
+      if (_state == GuestState.connecting) return; // one dial at a time
+      try {
+        await reconnect();
+      } on Object {
+        // Next tick.
+      }
+    });
   }
 
   void _setState(GuestState next) {

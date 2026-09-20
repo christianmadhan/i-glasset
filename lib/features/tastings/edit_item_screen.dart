@@ -285,10 +285,13 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Det ekstraordinære', style: GlasType.body(15, color: c.ink)),
+            Text('Det ekstraordinære · valgfrit',
+                style: GlasType.body(15, color: c.ink)),
             const SizedBox(height: 3),
-            Text('Én ting der gør netop dette glas særligt',
-                style: GlasType.body(12.5, color: c.muted)),
+            Text(
+                'Har glasset én ting, der gør det særligt, så markér den her — '
+                'så kan der gættes på det for ekstra point. Ellers lad den stå.',
+                style: GlasType.body(12.5, color: c.muted, height: 1.4)),
             const SizedBox(height: 10),
             ChipWrap(
               spacing: 6,

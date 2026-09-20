@@ -9,18 +9,16 @@ flutter_launcher_icons:
   image_path: "assets/icon/app_icon.png"
 
   ios: true
-  # iOS rejects any alpha channel in the marketing icon. The artwork's corners
-  # are transparent, so they are flattened onto the tile's own burgundy rather
-  # than the default white — iOS then applies its own mask over the top.
+  # iOS rejects any alpha channel in the marketing icon; the source has none,
+  # the ground runs edge to edge and iOS applies its own mask.
   remove_alpha_ios: true
-  background_color_ios: "#721B31"
+  background_color_ios: "#26081A"
 
   android: true
-  # The adaptive background matches the tile, so the artwork's rounded corners
-  # disappear into it and any mask shape reads as solid burgundy.
-  adaptive_icon_background: "#721B31"
-  adaptive_icon_foreground: "assets/icon/app_icon.png"
-  # The figures span ~69% of the tile; the adaptive mask only guarantees the
-  # middle 66%. Insetting pulls them inside it so no head gets clipped.
+  # The adaptive layers are the same drawing split in two: the glowing ground
+  # as the background, the letter and leaf as the foreground, inset so they
+  # sit inside the middle 66% every mask shape is guaranteed to show.
+  adaptive_icon_background: "assets/icon/adaptive_background.png"
+  adaptive_icon_foreground: "assets/icon/adaptive_foreground.png"
   adaptive_icon_foreground_inset: 16
   min_sdk_android: 21

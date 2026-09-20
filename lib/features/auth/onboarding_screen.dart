@@ -5,6 +5,7 @@ import '../../core/constants/vocabulary.dart';
 import '../../core/theme/glas_theme.dart';
 import '../../core/widgets/app_mark.dart';
 import '../../core/widgets/glas_widgets.dart';
+import '../../core/widgets/huce_mark.dart';
 
 /// "Kom godt i gang" — the four cards that explain the evening's shape.
 class OnboardingScreen extends StatefulWidget {
@@ -37,6 +38,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       anchorBottom: true,
       gap: 26,
       children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const HuceLockup(),
+            const SizedBox(height: 16),
         Row(
           children: [
             SectionLabel('Trin ${_step + 1} af ${_steps.length}',
@@ -50,6 +56,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     style: GlasType.body(13.5, color: c.muted)),
               ),
             ),
+          ],
+        ),
           ],
         ),
         _Mark(mark: step.mark),

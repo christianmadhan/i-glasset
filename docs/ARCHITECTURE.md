@@ -105,13 +105,43 @@ hands participants a view.
 Likewise `applyRating` strips `points` from anything a guest sends, and refuses
 edits to a glass that has already been revealed.
 
+The one thing the blind does carry is `has_extra`: a yes/no saying whether the
+host marked something extraordinary about the glass. "Det ekstraordinære" is
+not a fixed category — it is only in play on glasses that have one — so the
+guess sheet needs the flag to know whether to ask, without ever seeing the value.
+
+The host, by contrast, reads every rating from the moment it lands. That is the
+Supabase policy too, and it is how the host's screen can say "4 af 6 har
+bedømt" and list who is still tasting.
+
+## When the socket drops
+
+A locked iPhone drops its TCP connection within seconds, and an evening is
+mostly phones on a table. So the guest treats a dead socket as a pause, not an
+ending:
+
+- `TastingGuest` redials every three seconds for two minutes after an
+  unexpected drop, and again the moment the app comes back to the foreground.
+- A rating made while the socket was down is kept locally and re-sent when the
+  welcome lands. The host upserts by id, so re-sending everything is harmless.
+- The welcome snapshot never deletes the guest's own unsent ratings; only the
+  host's echo, matched by id, replaces them.
+- `finish()` stops the Bonjour advertisement but keeps the server socket up, and
+  `admit()` lets someone who was already in the room back in after the end. A
+  phone that missed the last reveal can still fetch the final picture; a
+  stranger with the code is told the tasting is over.
+
+And every screen of the evening has "← Forlad", so nobody is ever stuck on a
+phone that has stopped hearing from the host.
+
 ## What local mode cannot do
 
 Honest limits, all of them consequences of there being no server:
 
 - **Everyone must be on the same Wi-Fi.** No remote tastings.
 - **The host must stay in the app** for the evening to keep running. Phones
-  suspend sockets in the background.
+  suspend sockets in the background; guests redial on their own, but only the
+  host's phone holds the room.
 - **Group discovery is local.** "Find grupper" lists the clubs this phone
   already knows; there is no directory to search. A group arrives when you join
   a tasting that belongs to one.
@@ -122,7 +152,7 @@ Each of these disappears when `BACKEND=supabase` is switched on.
 
 ## Turning Supabase on
 
-1. Run the two migrations — see [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
+1. Run the migrations — see [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
 2. `cp dart_define.example.json dart_define.json` and fill in the values.
 3. Run with `--dart-define=BACKEND=supabase --dart-define-from-file=dart_define.json`.
 

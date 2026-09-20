@@ -7,6 +7,7 @@ import '../../core/theme/glas_theme.dart';
 import '../../core/widgets/feedback.dart';
 import '../../core/widgets/glas_widgets.dart';
 import '../../data/models/profile.dart';
+import 'tasting_exit.dart';
 
 /// "Venteværelse" — everyone gathers here until the host pours glass one.
 ///
@@ -160,28 +161,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     }
   }
 
-  Future<void> _leave() async {
-    final tasting = ref.read(tastingProvider(widget.tastingId)).value;
-    final isHost = tasting?.isHostedBy(ref.read(currentUserIdProvider)) ?? false;
-
-    // Leaving as host would abandon the room, so that just closes the screen.
-    if (!isHost) {
-      final confirmed = await showGlasConfirm(
-        context,
-        title: 'Forlad smagningen?',
-        body: 'Du kan komme tilbage med koden ${tasting?.joinCode ?? ''}.',
-        confirmLabel: 'Forlad',
-      );
-      if (!confirmed) return;
-      try {
-        await ref.read(tastingRepositoryProvider).leave(widget.tastingId);
-        ref.invalidate(myTastingsProvider);
-      } on Object catch (_) {
-        // Leaving is best-effort; the screen closes either way.
-      }
-    }
-    if (mounted) context.go('/');
-  }
+  Future<void> _leave() => leaveTasting(context, ref, widget.tastingId);
 }
 
 class _PersonTile extends StatelessWidget {

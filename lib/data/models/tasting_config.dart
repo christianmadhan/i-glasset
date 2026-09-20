@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'tasting_item.dart';
+
 /// The eight things a guess can be scored on, in the order the design lists
 /// them. The wire keys are Danish because they are also the jsonb keys the
 /// scoring function in `0001_init.sql` reads.
@@ -127,10 +129,23 @@ class TastingConfig {
 
   int pointsFor(GuessCategory category) => cats[category]?.points ?? 0;
 
-  /// Total points available on a single glass.
+  /// Total points available on a glass that has everything to guess at.
   int get pointsInPlay => GuessCategory.values
       .where(isOn)
       .fold(0, (sum, c) => sum + pointsFor(c));
+
+  /// The categories in play on one particular glass. "Det ekstraordinære" is
+  /// not a fixed part of the game: it only counts on glasses the host marked
+  /// something special about, so it drops out everywhere else. Passing null
+  /// gives the plain glass — what the programme screen quotes.
+  List<GuessCategory> activeCategoriesFor(TastingItem? item) => [
+        for (final c in GuessCategory.values)
+          if (isOn(c) && (c != GuessCategory.ekstra || item?.hasExtra == true)) c,
+      ];
+
+  /// See [activeCategoriesFor].
+  int pointsInPlayFor(TastingItem? item) =>
+      activeCategoriesFor(item).fold(0, (sum, c) => sum + pointsFor(c));
 
   List<GuessCategory> get activeCategories =>
       GuessCategory.values.where(isOn).toList();

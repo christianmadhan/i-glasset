@@ -17,13 +17,15 @@ abstract interface class HostDelegate {
   Future<String?> admit({required String joinCode, required Map<String, dynamic> profile});
 
   /// The evening as this guest may see it — unrevealed glasses redacted.
-  Future<TastingSnapshot> snapshotFor(String userId);
+  /// Keyed by the code they joined with, so a phone coming back for a finished
+  /// evening is not handed whatever the host has opened since.
+  Future<TastingSnapshot> snapshotFor(String userId, {required String joinCode});
 
   /// A guest's rating for one glass.
   Future<void> applyRating(String userId, Map<String, dynamic> rating);
 
   /// Someone left.
-  Future<void> onLeave(String userId);
+  Future<void> onLeave(String userId, {required String joinCode});
 
   /// The bytes of a revealed glass's photo, or null if there is none.
   Future<({Uint8List bytes, String sha256, String extension})?> imageFor(
@@ -62,7 +64,9 @@ class TastingHost {
     required String hostName,
     required int glasses,
   }) async {
-    if (_server != null) return;
+    // A second evening in the same session must not keep advertising the
+    // first one's code and title.
+    if (_server != null) await stop();
 
     // Port 0: let the OS pick a free one and tell everyone through the record.
     final server = await ServerSocket.bind(InternetAddress.anyIPv4, 0);
@@ -73,25 +77,39 @@ class TastingHost {
       onError: (Object error) => debugPrint('I Glasset host socket: $error'),
     );
 
-    final broadcast = BonsoirBroadcast(
-      service: BonsoirService(
-        name: 'I Glasset $joinCode',
-        type: kServiceType,
-        port: server.port,
-        attributes: {
-          kTxtCode: joinCode,
-          kTxtTitle: title,
-          kTxtHost: hostName,
-          kTxtGlasses: '$glasses',
-          kTxtVersion: '$kProtocolVersion',
-        },
-      ),
-    );
-    await broadcast.initialize();
-    await broadcast.start();
-    _broadcast = broadcast;
+    // If Bonjour is unavailable the socket still serves: a phone that already
+    // knows the address (one that was in the room and dropped) can come back.
+    try {
+      final broadcast = BonsoirBroadcast(
+        service: BonsoirService(
+          name: 'I Glasset $joinCode',
+          type: kServiceType,
+          port: server.port,
+          attributes: {
+            kTxtCode: joinCode,
+            kTxtTitle: title,
+            kTxtHost: hostName,
+            kTxtGlasses: '$glasses',
+            kTxtVersion: '$kProtocolVersion',
+          },
+        ),
+      );
+      await broadcast.initialize();
+      await broadcast.start();
+      _broadcast = broadcast;
+    } on Object catch (error) {
+      debugPrint('I Glasset host: kunne ikke annoncere på netværket: $error');
+    }
 
     _emit();
+  }
+
+  /// Takes the tasting off the air but keeps serving the phones that know
+  /// where it is — what a finished evening wants: no new joiners, but anyone
+  /// who dropped out can still come back for the final picture.
+  Future<void> stopAdvertising() async {
+    await _broadcast?.stop();
+    _broadcast = null;
   }
 
   /// Takes the tasting off the air and disconnects everyone.
@@ -117,7 +135,10 @@ class TastingHost {
     for (final guest in _guests.values.toList()) {
       if (guest.userId == null) continue;
       try {
-        final snapshot = await delegate.snapshotFor(guest.userId!);
+        final snapshot = await delegate.snapshotFor(
+          guest.userId!,
+          joinCode: guest.joinCode!,
+        );
         guest.send(PeerMessage(PeerMessageType.sync, snapshot.toJson()));
       } on Object catch (error) {
         debugPrint('I Glasset host sync: $error');
@@ -179,6 +200,7 @@ class TastingHost {
         }
 
         guest.userId = profile['id'] as String?;
+        guest.joinCode = code.toUpperCase();
         if (guest.userId == null) {
           guest.send(PeerMessage.error('Din profil mangler et id.'));
           await guest.close();
@@ -190,7 +212,10 @@ class TastingHost {
         if (previous != null && previous != guest) await previous.close();
         _guests[guest.userId!] = guest;
 
-        final snapshot = await delegate.snapshotFor(guest.userId!);
+        final snapshot = await delegate.snapshotFor(
+          guest.userId!,
+          joinCode: guest.joinCode!,
+        );
         guest.send(PeerMessage(PeerMessageType.welcome, snapshot.toJson()));
         _emit();
 
@@ -240,7 +265,7 @@ class TastingHost {
     final id = guest.userId;
     if (id != null && identical(_guests[id], guest)) {
       _guests.remove(id);
-      await delegate.onLeave(id);
+      await delegate.onLeave(id, joinCode: guest.joinCode ?? '');
     }
     await guest.close();
     _emit();
@@ -267,6 +292,7 @@ class _GuestConnection {
 
   final Socket socket;
   String? userId;
+  String? joinCode;
   bool _closed = false;
 
   void send(PeerMessage message) {

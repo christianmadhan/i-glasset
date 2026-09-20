@@ -1,4 +1,5 @@
 import 'tasting_config.dart';
+import 'tasting_item.dart';
 
 /// What one person said about one glass: a score, free notes, and — when the
 /// host turned the guessing game on — their guess at what it was.
@@ -63,8 +64,10 @@ class Rating {
         GuessCategory.ekstra => guessExtra != null,
       };
 
-  int answeredCount(TastingConfig config) =>
-      config.activeCategories.where(hasAnswered).length;
+  int answeredCount(TastingConfig config, {TastingItem? item}) =>
+      (item == null ? config.activeCategories : config.activeCategoriesFor(item))
+          .where(hasAnswered)
+          .length;
 
   factory Rating.fromJson(Map<String, dynamic> json) {
     final rawPoints = json['points'] as Map<String, dynamic>?;

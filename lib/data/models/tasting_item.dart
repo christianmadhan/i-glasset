@@ -27,7 +27,10 @@ class TastingItem {
     this.imagePath,
     this.imageSha256,
     this.imageBytes,
-  });
+    bool? hasExtra,
+    // A named parameter cannot be private, so no initialising formal here.
+    // ignore: prefer_initializing_formals
+  }) : _hasExtra = hasExtra;
 
   final String id;
   final String tastingId;
@@ -48,6 +51,12 @@ class TastingItem {
 
   /// The one thing the host marked as special about this glass.
   final String? extra;
+
+  /// Whether the host marked anything at all — carried to guests as a plain
+  /// yes/no before the reveal, so the guess sheet knows to ask without
+  /// giving the answer away. Only glasses with one have the category in play.
+  bool get hasExtra => _hasExtra ?? (extra != null && extra!.isNotEmpty);
+  final bool? _hasExtra;
 
   final List<String> aromas;
   final List<String> flavours;
@@ -121,6 +130,7 @@ class TastingItem {
         currency: json['currency'] as String? ?? 'DKK',
         productType: json['product_type'] as String?,
         extra: json['extra'] as String?,
+        hasExtra: json['has_extra'] as bool?,
         aromas: (json['aromas'] as List?)?.cast<String>() ?? const [],
         flavours: (json['flavours'] as List?)?.cast<String>() ?? const [],
         hostNotes: json['host_notes'] as String?,

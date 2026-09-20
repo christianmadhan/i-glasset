@@ -6,10 +6,12 @@ import '../../core/providers.dart';
 import '../../core/theme/glas_theme.dart';
 import '../../core/widgets/feedback.dart';
 import '../../core/widgets/glas_widgets.dart';
+import '../../data/models/profile.dart';
 import '../../data/models/rating.dart';
 import '../../data/models/tasting.dart';
 import '../../data/models/tasting_item.dart';
 import 'rating_controller.dart';
+import 'tasting_exit.dart';
 
 /// "Live tasting" — the glass in front of you, still hidden.
 class LiveScreen extends ConsumerStatefulWidget {
@@ -25,6 +27,11 @@ class _LiveScreenState extends ConsumerState<LiveScreen> {
   final _notes = TextEditingController();
   String? _notesForItem;
   bool _busy = false;
+
+  /// The glass whose guess sheet has been opened. Until then the primary
+  /// action is the guess itself, not "send" — guessing is a step of the
+  /// evening, not a link to find.
+  String? _guessedFor;
 
   @override
   void dispose() {
@@ -91,10 +98,28 @@ class _LiveScreenState extends ConsumerState<LiveScreen> {
       padding: const EdgeInsets.fromLTRB(22, 20, 22, 26),
       gap: 22,
       children: [
-        _Progress(
-          title: tasting.title,
-          position: position,
-          total: items.length,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                BackLink(
+                  '← Forlad',
+                  color: c.nightMuted,
+                  onTap: () => leaveTasting(context, ref, widget.tastingId),
+                ),
+                const Spacer(),
+                SectionLabel(isHost ? 'Vært' : 'Deltager', color: c.nightMuted),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _Progress(
+              title: tasting.title,
+              position: position,
+              total: items.length,
+            ),
+            GuestConnectionNote(isHost: isHost),
+          ],
         ),
 
         _HiddenGlass(position: position),
@@ -142,16 +167,14 @@ class _LiveScreenState extends ConsumerState<LiveScreen> {
             ),
             const SizedBox(height: 12),
 
-            _GuessLink(
-              tasting: tasting,
-              rating: rating,
-              onTap: () async {
-                await context.push(
-                  '/tastings/${widget.tastingId}/sheet?item=${item.id}',
-                );
-                await ref.read(ratingProvider(item.id).notifier).save();
-              },
-            ),
+            if (tasting.config.guessOn)
+              _GuessCard(
+                tasting: tasting,
+                item: item,
+                rating: rating,
+                opened: _guessedFor == item.id,
+                onTap: () => _openGuess(item),
+              ),
 
             const SizedBox(height: 12),
             NightField(
@@ -165,7 +188,36 @@ class _LiveScreenState extends ConsumerState<LiveScreen> {
           ],
         ),
 
-        if (!rating.isSubmitted)
+        if (!rating.isSubmitted &&
+            tasting.config.guessOn &&
+            _guessedFor != item.id)
+          // Step two of three: the guess. Sending comes after.
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              GlasButton(
+                label: 'Gæt vinen',
+                tone: GlasButtonTone.accent,
+                trailing: Text('›',
+                    style: GlasType.body(20, color: c.onAccent, height: 1)),
+                onTap: () => _openGuess(item),
+              ),
+              const SizedBox(height: 10),
+              Center(
+                child: GlasTap(
+                  onTap: _busy || !_canSubmit(tasting, rating)
+                      ? null
+                      : () => _submit(item),
+                  child: Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Text('Send uden at gætte',
+                        style: GlasType.body(13, color: c.nightMuted)),
+                  ),
+                ),
+              ),
+            ],
+          )
+        else if (!rating.isSubmitted)
           GlasButton(
             label: _busy ? 'Sender…' : 'Send bedømmelse',
             tone: GlasButtonTone.paper,
@@ -184,6 +236,12 @@ class _LiveScreenState extends ConsumerState<LiveScreen> {
           ),
       ],
     );
+  }
+
+  Future<void> _openGuess(TastingItem item) async {
+    await context.push('/tastings/${widget.tastingId}/sheet?item=${item.id}');
+    await ref.read(ratingProvider(item.id).notifier).save();
+    if (mounted) setState(() => _guessedFor = item.id);
   }
 
   bool _canSubmit(Tasting tasting, Rating rating) {
@@ -336,37 +394,42 @@ class _HiddenGlass extends StatelessWidget {
 }
 
 /// The row that leads into the guess sheet, and reports how far along you are.
-class _GuessLink extends StatelessWidget {
-  const _GuessLink({
+/// The guess, as a card rather than a line: what is in play, and — once the
+/// sheet has been opened — how far the guest got, with the way back in.
+class _GuessCard extends StatelessWidget {
+  const _GuessCard({
     required this.tasting,
+    required this.item,
     required this.rating,
+    required this.opened,
     required this.onTap,
   });
 
   final Tasting tasting;
+  final TastingItem item;
   final Rating rating;
+  final bool opened;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final c = context.glas;
     final config = tasting.config;
-
-    final summary = config.guessOn
-        ? '${rating.answeredCount(config)} af '
-            '${config.activeCategories.length} kategorier gættet · '
-            '${config.pointsInPlay} point i spil'
-        : 'Gættekonkurrencen er slået fra i denne smagning';
+    final categories = config.activeCategoriesFor(item);
+    final names = [
+      for (final cat in categories.take(4)) cat.label.toLowerCase(),
+    ].join(', ');
 
     return GlasTap(
-      onTap: config.guessOn ? onTap : null,
-      radius: 0,
+      onTap: onTap,
+      radius: 15,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          border: Border.symmetric(
-            horizontal:
-                BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          borderRadius: BorderRadius.circular(15),
+          color: opened ? Colors.transparent : c.accentSoft,
+          border: Border.all(
+            color: opened ? c.nightLine : c.accent.withValues(alpha: 0.55),
           ),
         ),
         child: Row(
@@ -375,18 +438,66 @@ class _GuessLink extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Gæt vinen · valgfrit',
-                      style: GlasType.body(14.5, color: c.nightInk)),
-                  const SizedBox(height: 2),
-                  Text(summary,
-                      style: GlasType.body(12, color: c.nightMuted)),
+                  Text(opened ? 'Dit gæt' : 'Gæt vinen',
+                      style: GlasType.display(17, color: c.nightInk, height: 1.1)),
+                  const SizedBox(height: 4),
+                  Text(
+                    opened
+                        ? '${rating.answeredCount(config, item: item)} af '
+                            '${categories.length} kategorier · '
+                            '${config.pointsInPlayFor(item)} point i spil'
+                        : '$names… · ${config.pointsInPlayFor(item)} point i spil',
+                    style: GlasType.body(12.5, color: c.nightMuted),
+                  ),
                 ],
               ),
             ),
-            if (config.guessOn)
-              Text('›', style: GlasType.body(16, color: c.nightMuted)),
+            const SizedBox(width: 12),
+            Text(opened ? 'Ret' : '›',
+                style: GlasType.body(opened ? 13 : 22,
+                    color: c.accent, height: 1)),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// One name in the host's overview: a filled dot once they have sent.
+class _ReadyChip extends StatelessWidget {
+  const _ReadyChip({required this.name, required this.ready});
+
+  final String name;
+  final bool ready;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.glas;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: ready ? c.accent.withValues(alpha: 0.6) : c.nightLine,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: ready ? c.accent : Colors.transparent,
+              border: ready ? null : Border.all(color: c.nightMuted),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(name,
+              style: GlasType.body(12.5,
+                  color: ready ? c.nightInk : c.nightMuted)),
+        ],
       ),
     );
   }
@@ -413,15 +524,18 @@ class _SubmittedPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.glas;
-    final people = ref.watch(participantCountProvider(tastingId)).value ??
-        ref.watch(participantsProvider(tastingId)).value?.length ??
-        0;
+    final roster = ref.watch(participantsProvider(tastingId)).value ??
+        const <({Profile profile, bool isHost})>[];
+    final people =
+        ref.watch(participantCountProvider(tastingId)).value ?? roster.length;
 
     // Counts other people's submissions only where the tasting's visibility
-    // setting lets this device see them at all.
-    final submitted = (ref.watch(ratingsProvider(tastingId)).value ?? [])
-        .where((r) => r.tastingItemId == item.id && r.submittedAt != null)
-        .length;
+    // setting lets this device see them at all — the host always can.
+    final sent = {
+      for (final r in ref.watch(ratingsProvider(tastingId)).value ?? <Rating>[])
+        if (r.tastingItemId == item.id && r.submittedAt != null) r.userId,
+    };
+    final submitted = sent.length;
 
     return RiseIn(
       child: Column(
@@ -466,6 +580,21 @@ class _SubmittedPanel extends ConsumerWidget {
               ],
             ),
           ),
+          if (isHost && roster.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            // The host's overview: who is still tasting, by name.
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final person in roster)
+                  _ReadyChip(
+                    name: person.profile.firstName,
+                    ready: sent.contains(person.profile.id),
+                  ),
+              ],
+            ),
+          ],
           const SizedBox(height: 12),
           if (isHost)
             GlasButton(

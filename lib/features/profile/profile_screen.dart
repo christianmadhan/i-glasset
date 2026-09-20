@@ -7,6 +7,7 @@ import '../../core/theme/glas_theme.dart';
 import '../../core/utils/formatting.dart';
 import '../../core/widgets/feedback.dart';
 import '../../core/widgets/glas_widgets.dart';
+import '../../core/widgets/huce_mark.dart';
 import '../../data/repositories/group_repository.dart';
 import 'taste_profile.dart';
 
@@ -24,6 +25,7 @@ class ProfileScreen extends ConsumerWidget {
     return PaperScreen(
       padding: const EdgeInsets.fromLTRB(22, 20, 22, 24),
       children: [
+        const HuceLockup(),
         Row(
           children: [
             Monogram(
@@ -139,6 +141,8 @@ class ProfileScreen extends ConsumerWidget {
           tone: GlasButtonTone.outline,
           onTap: () => context.push('/tastings/new'),
         ),
+
+        const HuceFooter(),
       ],
     );
   }

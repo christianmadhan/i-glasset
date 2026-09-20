@@ -139,6 +139,28 @@ void main() {
     expect(points(guess(extra: 'Økologisk')), 0);
   });
 
+  test('a glass the host marked nothing special about has no such category',
+      () {
+    // The category is not a fixed part of the game: on a plain glass it is
+    // not in play at all, so the total in play shrinks and no row is scored.
+    final plain = TastingItem(
+      id: 'i2',
+      tastingId: 't1',
+      position: 4,
+      isRevealed: true,
+      grape: truth.grape,
+    );
+    final scored = GuessScorer.score(
+      item: plain,
+      rating: guess(grape: 'Nebbiolo', extra: 'Økologisk'),
+      config: const TastingConfig(),
+    );
+    expect(scored.rows.containsKey(GuessCategory.ekstra), isFalse);
+    expect(scored.total, 3);
+    expect(const TastingConfig().pointsInPlayFor(plain), 23);
+    expect(const TastingConfig().pointsInPlayFor(truth), 26);
+  });
+
   test('categories the host switched off score nothing', () {
     final config = const TastingConfig().withCategory(
       GuessCategory.drue,

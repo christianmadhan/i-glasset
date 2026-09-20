@@ -22,8 +22,18 @@ void main() {
         home: child,
       );
 
-  testWidgets('walks through all four onboarding steps', (tester) async {
+  // The card plus the family lockup is taller than the 600px default
+  // surface; a phone is taller still.
+  Future<void> show(WidgetTester tester,
+      {Size size = const Size(414, 900)}) async {
+    tester.view.physicalSize = size * 3;
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(wrap(const OnboardingScreen()));
+  }
+
+  testWidgets('walks through all four onboarding steps', (tester) async {
+    await show(tester);
 
     expect(find.text('TRIN 1 AF 4'), findsOneWidget);
     expect(find.text('Værten samler flaskerne'), findsOneWidget);
@@ -42,7 +52,7 @@ void main() {
 
   testWidgets('the back arrow only appears after the first step',
       (tester) async {
-    await tester.pumpWidget(wrap(const OnboardingScreen()));
+    await show(tester);
     expect(find.text('←'), findsNothing);
 
     await tester.tap(find.text('Videre'));
@@ -55,7 +65,7 @@ void main() {
   });
 
   testWidgets('the progress dots jump straight to a step', (tester) async {
-    await tester.pumpWidget(wrap(const OnboardingScreen()));
+    await show(tester);
 
     // Tapping the last dot skips straight to that step.
     await tester.tap(find.byKey(const ValueKey('guide-dot-3')));
@@ -65,11 +75,7 @@ void main() {
   });
 
   testWidgets('renders without overflowing a small phone', (tester) async {
-    tester.view.physicalSize = const Size(360 * 3, 640 * 3);
-    tester.view.devicePixelRatio = 3;
-    addTearDown(tester.view.reset);
-
-    await tester.pumpWidget(wrap(const OnboardingScreen()));
+    await show(tester, size: const Size(360, 640));
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(tester.takeException(), isNull);
