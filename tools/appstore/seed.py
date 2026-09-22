@@ -33,6 +33,10 @@ def iso(dt):
     return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
+# The live evening is always "tonight", so the home screen says "i aften".
+TODAY = datetime.now()
+
+
 def local(y, m, d, hh=19, mm=0):
     # Danish summer time (UTC+2) for every date used here.
     return datetime(y, m, d, hh, mm, tzinfo=timezone(timedelta(hours=2)))
@@ -649,7 +653,7 @@ pending = [p for p in PEOPLE if p[1].split()[0] in ("Marie", "Jonas", "Sofie", "
 add(build_tasting(
     "Rundt om Italien", "Seks regioner, seks glas",
     "Fra Alperne til Vesuv. Glas 3 og 6 har noget særligt ved sig.",
-    ME, local(2026, 9, 20), "ITAL23", T_ITALIEN, "live",
+    ME, local(TODAY.year, TODAY.month, TODAY.day), "ITAL23", T_ITALIEN, "live",
     3, None, {"revealed": 2, "pending": pending, "pending_position": 3}, 15))
 
 

@@ -1,0 +1,5 @@
+# Service-account key for the Google Play Developer API. Create it in Google
+# Cloud, grant it access under Play Console → Users and permissions, and keep
+# the JSON outside git (fastlane/*.json is ignored).
+json_key_file(ENV.fetch("PLAY_JSON_KEY", File.expand_path("~/Keys/iglasset-play-api.json")))
+package_name("dk.huce.iglasset")

@@ -61,6 +61,25 @@ All three are optional; every flow degrades gracefully when denied.
 `ITSAppUsesNonExemptEncryption = false`. The app uses only the TLS/networking
 primitives provided by iOS.
 
+## Answers Apple asked for on the first submission (2.1 Information Needed)
+
+Keep these in the Notes field on every future submission.
+
+- **External services:** none — no server, no auth, no analytics, no ads, no
+  payments, no AI. Device-to-device Bonjour + TCP on the local network only.
+  Fonts are fetched once from Google Fonts by the `google_fonts` package and
+  cached on the device.
+- **Regional differences:** none; identical in all regions, Danish UI everywhere.
+- **Regulated industry / protected material:** not applicable. The app does not
+  sell alcohol and ships no third-party content.
+- **User-generated content:** names, scores, notes and bottle photos are shared
+  only with the phones that joined that tasting with the host's code, over the
+  local network. No public feed, no user discovery, nothing stored by us. The
+  host controls the code and ends the evening; any participant can leave.
+- **Accounts:** none, therefore no account deletion. All data is on the device
+  and removed with the app.
+- **Screen recording:** `screen_recording_script.md` lists the flow to record.
+
 ## Contact
 
 Christian Witt · christian@huce.dk

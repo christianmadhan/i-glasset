@@ -1,0 +1,6 @@
+# Copy to android/key.properties (git-ignored) and fill in. The keystore itself
+# must live outside the repo or be git-ignored too (*.jks already is).
+storeFile=../upload-keystore.jks
+storePassword=CHANGE-ME
+keyAlias=upload
+keyPassword=CHANGE-ME

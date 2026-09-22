@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-"""Compose App Store marketing screenshots from raw simulator captures.
+"""Compose store marketing screenshots from raw simulator/emulator captures.
 
-Usage: market.py <raw shots dir> <output dir> <fonts dir>
+Usage: market.py <raw shots dir> <output dir> <fonts dir> [appstore|play]
 
 For every locale and device size, writes NN-<slug>.png framed on the brand's
 cellar-green ground with a Libre Caslon headline, the raw capture inside a thin
@@ -13,13 +13,21 @@ import sys
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 RAW, OUT, FONTS = sys.argv[1:4]
+STORE = sys.argv[4] if len(sys.argv) > 4 else "appstore"
 
 SIZES = {
-    # App Store Connect display families and the pixel sizes it accepts.
-    "iphone-6.7": (1290, 2796),
-    "iphone-6.5": (1242, 2688),
-    "iphone-5.5": (1242, 2208),
-}
+    "appstore": {
+        # App Store Connect display families and the pixel sizes it accepts.
+        "iphone-6.7": (1290, 2796),
+        "iphone-6.5": (1242, 2688),
+        "iphone-5.5": (1242, 2208),
+    },
+    "play": {
+        # Google Play caps screenshots at a 2:1 aspect ratio, so a raw phone
+        # capture is too tall on its own; the framed composition fits.
+        "phone": (1080, 2160),
+    },
+}[STORE]
 
 # (raw file, slug, {locale: (headline, subline)})
 SHOTS = [
@@ -106,7 +114,7 @@ def wrap(draw, text, fnt, width):
 def compose(raw_path, headline, subline, size):
     W, H = size
     s = W / 1290  # scale everything from the 6.7" design
-    tall = H / W > 2.0
+    tall = H / W > 1.9
 
     canvas = background(W, H)
     draw = ImageDraw.Draw(canvas)
