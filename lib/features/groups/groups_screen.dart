@@ -55,23 +55,18 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
           onChanged: (value) =>
               ref.read(groupSearchProvider.notifier).set(value),
         ),
-        Row(
+        ButtonRow(
           children: [
-            Expanded(
-              child: GlasButton(
-                label: 'Opret gruppe',
-                height: 48,
-                onTap: () => context.push('/groups/new'),
-              ),
+            GlasButton(
+              label: 'Opret gruppe',
+              height: 48,
+              onTap: () => context.push('/groups/new'),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: GlasButton(
-                label: 'Brug invitation',
-                height: 48,
-                tone: GlasButtonTone.outline,
-                onTap: _promptForInvite,
-              ),
+            GlasButton(
+              label: 'Brug invitation',
+              height: 48,
+              tone: GlasButtonTone.outline,
+              onTap: _promptForInvite,
             ),
           ],
         ),

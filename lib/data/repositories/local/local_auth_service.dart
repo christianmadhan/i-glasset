@@ -51,9 +51,9 @@ class LocalAuthService implements AuthService {
     }
 
     // Re-running this renames the existing profile rather than making a second
-    // identity, so a guest's ratings stay attached to them.
-    final existing = _session.userId;
-    final id = existing ?? _uuid.v4();
+    // identity, so a guest's ratings stay attached to them. The same goes for
+    // the profile this device signed out of: signing back in picks it up.
+    final id = _session.userId ?? await _rememberedProfileId() ?? _uuid.v4();
 
     await _store.upsert(LocalStore.profiles, {
       'id': id,
@@ -71,6 +71,17 @@ class LocalAuthService implements AuthService {
   Future<AuthUser> signInAsGuest() async {
     final existing = _session.user;
     if (existing != null) return existing;
+
+    // Someone who signed out and comes back "without an account" is still the
+    // same person on this phone; keep their profile and everything on it.
+    final remembered = await _rememberedProfileId();
+    if (remembered != null) {
+      final row = await _store.byId(LocalStore.profiles, remembered);
+      return _session.adopt(AuthUser(
+        id: remembered,
+        isAnonymous: row?['is_guest'] as bool? ?? false,
+      ));
+    }
 
     final id = _uuid.v4();
     await _store.upsert(LocalStore.profiles, {
@@ -93,6 +104,13 @@ class LocalAuthService implements AuthService {
   /// them up again.
   @override
   Future<void> signOut() => _session.clear();
+
+  /// The profile this device last signed out of — if its row still exists.
+  Future<String?> _rememberedProfileId() async {
+    final id = await _session.lastUserId();
+    if (id == null) return null;
+    return await _store.byId(LocalStore.profiles, id) == null ? null : id;
+  }
 
   static String _seed() {
     final random = Random();

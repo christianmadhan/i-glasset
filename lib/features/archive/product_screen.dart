@@ -101,7 +101,7 @@ class ProductScreen extends ConsumerWidget {
               Text(item.producer!, style: GlasType.body(13, color: c.muted)),
               const SizedBox(height: 6),
             ],
-            Text(item.displayName,
+            WholeWordsText(item.displayName,
                 style: GlasType.display(28, color: c.ink, height: 1.15)),
           ],
         ),

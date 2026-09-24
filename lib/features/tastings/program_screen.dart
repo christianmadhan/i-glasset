@@ -60,7 +60,7 @@ class _ProgramScreenState extends ConsumerState<ProgramScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(tasting.title,
+            WholeWordsText(tasting.title,
                 style: GlasType.display(28, color: c.ink, height: 1.15)),
             const SizedBox(height: 5),
             Text(
@@ -130,7 +130,8 @@ class _ProgramScreenState extends ConsumerState<ProgramScreen> {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: c.line, width: 1.5),
               ),
-              child: Text('+ Tilføj glas',
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: FitText('+ Tilføj glas',
                   style: GlasType.body(14.5, color: c.muted)),
             ),
           ),
@@ -229,52 +230,67 @@ class _CodePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.glas;
+
+    final code = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Deltagerkode', style: GlasType.body(12, color: c.nightMuted)),
+        const SizedBox(height: 3),
+        GestureDetector(
+          onLongPress: () async {
+            await Clipboard.setData(ClipboardData(text: tasting.joinCode));
+            if (context.mounted) {
+              showGlasMessage(context, 'Koden er kopieret.');
+            }
+          },
+          // Never broken across two lines: "ITAL2 / 3" reads as a different
+          // code.
+          child: FitText(
+            tasting.joinCode,
+            alignment: Alignment.centerLeft,
+            style: GlasType.mono(24, color: c.nightInk, tracking: 0.14),
+          ),
+        ),
+      ],
+    );
+
+    final open = GlasTap(
+      onTap: onOpen,
+      radius: 12,
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: c.nightInk,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: FitText(openLabel, style: GlasType.body(14, color: c.night)),
+      ),
+    );
+
     return NightPanel(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       radius: 18,
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Deltagerkode',
-                    style: GlasType.body(12, color: c.nightMuted)),
-                const SizedBox(height: 3),
-                GestureDetector(
-                  onLongPress: () async {
-                    await Clipboard.setData(
-                        ClipboardData(text: tasting.joinCode));
-                    if (context.mounted) {
-                      showGlasMessage(context, 'Koden er kopieret.');
-                    }
-                  },
-                  child: Text(
-                    tasting.joinCode,
-                    style:
-                        GlasType.mono(24, color: c.nightInk, tracking: 0.14),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (isHost)
-            GlasTap(
-              onTap: onOpen,
-              radius: 12,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: c.nightInk,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(openLabel,
-                    style: GlasType.body(14, color: c.night)),
-              ),
-            ),
-        ],
-      ),
+      // Side by side while the code keeps a comfortable width next to the
+      // button; on a narrow phone or at a large text size the button moves
+      // under the code, full width, instead of crushing it.
+      child: LayoutBuilder(builder: (context, constraints) {
+        final roomy = constraints.maxWidth /
+                MediaQuery.textScalerOf(context).scale(1) >=
+            290;
+        if (!isHost) return code;
+        if (roomy) {
+          return Row(children: [
+            Expanded(child: code),
+            const SizedBox(width: 12),
+            open,
+          ]);
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [code, const SizedBox(height: 14), open],
+        );
+      }),
     );
   }
 }

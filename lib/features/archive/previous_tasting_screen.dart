@@ -53,7 +53,7 @@ class PreviousTastingScreen extends ConsumerWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(tasting.title,
+            WholeWordsText(tasting.title,
                 style: GlasType.display(28, color: c.ink, height: 1.15)),
             const SizedBox(height: 6),
             Text(

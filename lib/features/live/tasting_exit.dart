@@ -7,6 +7,7 @@ import '../../core/providers.dart';
 import '../../core/theme/glas_theme.dart';
 import '../../core/widgets/feedback.dart';
 import '../../core/widgets/glas_widgets.dart';
+import '../../data/models/profile.dart';
 import '../../data/peer/tasting_guest.dart';
 
 /// "← Forlad" — the way out of any screen of the evening.
@@ -39,6 +40,33 @@ Future<void> leaveTasting(
     }
   }
   if (context.mounted) context.go('/');
+}
+
+/// The host putting someone out of the room. Asked first, because it also
+/// deletes what that person has scored tonight and bars the code for them.
+Future<void> removeParticipant(
+  BuildContext context,
+  WidgetRef ref,
+  String tastingId,
+  Profile profile,
+) async {
+  final confirmed = await showGlasConfirm(
+    context,
+    title: 'Fjern ${profile.firstName}?',
+    body: 'De bliver sat ud af smagningen, deres bedømmelser i aften slettes, '
+        'og koden virker ikke for dem igen.',
+    confirmLabel: 'Fjern',
+  );
+  if (!confirmed || !context.mounted) return;
+  try {
+    await ref
+        .read(tastingRepositoryProvider)
+        .removeParticipant(tastingId, profile.id);
+    ref.invalidate(participantsProvider(tastingId));
+    ref.invalidate(ratingsProvider(tastingId));
+  } on Object catch (error) {
+    if (context.mounted) showGlasError(context, error);
+  }
 }
 
 /// One line under the header telling a guest the socket to the host is down

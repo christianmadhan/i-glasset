@@ -40,7 +40,7 @@ class HomeScreen extends ConsumerWidget {
             children: [
               const HuceLockup(),
               const SizedBox(height: 18),
-              Text(
+              WholeWordsText(
                 greeting(profile?.firstName),
                 style: GlasType.display(30, color: c.ink),
               ),
@@ -135,7 +135,7 @@ class _NextTastingCard extends ConsumerWidget {
         children: [
           SectionLabel('Næste smagning', color: c.nightMuted),
           const SizedBox(height: 6),
-          Text(tasting.title,
+          WholeWordsText(tasting.title,
               style: GlasType.display(25, color: c.nightInk, height: 1.2)),
           const SizedBox(height: 6),
           Text(
@@ -158,21 +158,25 @@ class _NextTastingCard extends ConsumerWidget {
                 color: c.nightInk,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    isHost ? 'Åbn dit program' : 'Deltag med kode',
-                    style: GlasType.body(15.5,
-                        color: c.night, weight: FontWeight.w500),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    tasting.joinCode,
-                    style: GlasType.mono(13,
-                        color: c.night.withValues(alpha: 0.55)),
-                  ),
-                ],
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      isHost ? 'Åbn dit program' : 'Deltag med kode',
+                      style: GlasType.body(15.5,
+                          color: c.night, weight: FontWeight.w500),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      tasting.joinCode,
+                      style: GlasType.mono(13,
+                          color: c.night.withValues(alpha: 0.55)),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -197,10 +201,10 @@ class _NothingPlannedCard extends StatelessWidget {
           Text('Skal vi åbne en flaske?',
               style: GlasType.display(25, color: c.nightInk, height: 1.2)),
           const SizedBox(height: 18),
-          Row(
+          ButtonRow(
+            minChildWidth: 140,
             children: [
-              Expanded(
-                child: GlasTap(
+              GlasTap(
                   onTap: () => context.push('/join'),
                   radius: 14,
                   child: Container(
@@ -210,14 +214,12 @@ class _NothingPlannedCard extends StatelessWidget {
                       color: c.nightInk,
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Text('Deltag med kode',
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: FitText('Deltag med kode',
                         style: GlasType.body(15, color: c.night)),
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: GlasTap(
+              GlasTap(
                   onTap: () => context.push('/tastings/new'),
                   radius: 14,
                   child: Container(
@@ -227,11 +229,11 @@ class _NothingPlannedCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: c.nightLine),
                     ),
-                    child: Text('Opret smagning',
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: FitText('Opret smagning',
                         style: GlasType.body(15, color: c.nightInk)),
                   ),
                 ),
-              ),
             ],
           ),
         ],

@@ -189,10 +189,11 @@ class _CreateTastingScreenState extends ConsumerState<CreateTastingScreen> {
                   borderRadius: BorderRadius.circular(13),
                   border: Border.all(color: c.line),
                 ),
-                child: Text(
+                child: FitText(
                   _when == null
                       ? 'Vælg dato og tid'
                       : '${formatDate(_when)}, ${formatWhen(_when).split(' ').last}',
+                  alignment: Alignment.centerLeft,
                   style: GlasType.body(15,
                       color: _when == null ? c.muted : c.ink),
                 ),
@@ -378,14 +379,15 @@ class _ChoiceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
+          // The hint drops below the label when both won't fit on one line,
+          // rather than squeezing "Karakterskala" until it splits.
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.end,
+            spacing: 10,
+            runSpacing: 2,
             children: [
-              Expanded(
-                child: Text(choice.label,
-                    style: GlasType.body(14.5, color: c.ink)),
-              ),
+              Text(choice.label, style: GlasType.body(14.5, color: c.ink)),
               Text(choice.hint.toUpperCase(),
                   style: GlasType.label(10, color: c.muted, tracking: 0.08)),
             ],

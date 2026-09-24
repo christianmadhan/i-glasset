@@ -31,7 +31,7 @@ class TopProductsScreen extends ConsumerWidget {
           children: [
             const HuceLockup(),
             const SizedBox(height: 18),
-            Text('Mine topsmagninger',
+            WholeWordsText('Mine topsmagninger',
                 style: GlasType.display(29, color: c.ink)),
             const SizedBox(height: 5),
             Text(

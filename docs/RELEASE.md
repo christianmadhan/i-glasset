@@ -117,6 +117,56 @@ Review takes days; these are the things that fail late.
 - [ ] Background the host mid-tasting, come back, confirm the room recovers.
 - [ ] A cold install: no profile, no data, no crash on first run.
 
+## 1.0.0 build 2 — what changed after the first review round
+
+Apple's first response (Guideline 2.1, information needed) asked about login,
+user content moderation and data deletion. Build 2 adds, in local mode:
+
+- Signing out no longer orphans the device's data: the next sign-in reattaches
+  to the same profile (`LocalSession.lastUserId`).
+- The host can remove a participant — "Fjern" on the lobby tile, or hold a
+  name in the live roster. Their ratings for the evening are deleted and the
+  code stops working for them (`removeParticipant`, door list on the tasting
+  row, `TastingHost.expel`).
+- Profil → "Rapportér indhold" opens a mail to christian@huce.dk.
+- Profil → "Slet alle mine data" wipes store, photos and session.
+- Two layout fixes found while recording the review video on an iPhone 17 Pro
+  Max: bottom-anchored screens (join, onboarding) no longer float mid-screen
+  or overflow, and dialogs on night screens are opaque.
+- A layout pass over every screen (see "Layout guard" below): no overflow,
+  clipped text or mid-word line break at 320–440 pt wide, at the default and
+  the largest standard text size, or with the keyboard up.
+- The fonts ship in `assets/google_fonts/` and runtime fetching is off, so the
+  first launch looks right offline and the app never contacts Google.
+
+## Layout guard
+
+`test/layout_overflow_test.dart` renders every screen of the real app over the
+demo club in `test/fixtures/club/`, with the bundled fonts, at four phone sizes
+(320×568, 360×640, 375×667, 440×956), at text scale 1.0 and 1.35, and with the
+keyboard up on screens that type. It fails on any RenderFlex overflow, on text
+clipped by a box too short for it, and on a word split across lines. Run it
+after any UI change:
+
+```bash
+flutter test test/layout_overflow_test.dart
+```
+
+To look at what it rendered, write the screens out as images:
+
+```bash
+flutter test test/layout_overflow_test.dart --dart-define=LAYOUT_GOLDENS=true --update-goldens
+open test/goldens
+```
+
+Three shared widgets carry most of the fixes, and new screens should use them:
+`FitText` (one line that shrinks instead of spilling, for labels in fixed-size
+boxes), `WholeWordsText` (headlines and names that wrap between words, never
+inside one) and `ButtonRow` (button pairs that stack on a narrow phone).
+
+The reply text, review notes and the recording shot list live in
+`appstore/metadata/review/`.
+
 ## Known gaps before 1.0
 
 - **Android release signing** is not configured — `android/app/build.gradle.kts`

@@ -118,6 +118,14 @@ class LocalMediaStore {
     return digest.toString();
   }
 
+  /// Removes every photo this app holds. "Slet alle mine data" is the only
+  /// caller; the folder comes back empty so later writes still have a home.
+  Future<void> wipe() async {
+    final dir = await root();
+    if (await dir.exists()) await dir.delete(recursive: true);
+    await dir.create(recursive: true);
+  }
+
   Future<void> deleteTasting(String tastingId) async {
     final dir = Directory('${(await root()).path}/tastings/$tastingId');
     if (await dir.exists()) {

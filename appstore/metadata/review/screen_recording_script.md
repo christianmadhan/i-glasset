@@ -24,8 +24,17 @@ on the same Wi-Fi.
 | 10 | Roster shows who has scored. **Afslør produkt**. | Reveal: photo, details, points. |
 | 11 | **Se stillingen**, back, **Videre til glas 2**. Repeat scoring briefly, reveal, **Afslut smagningen**. | Summary screen. |
 | 12 | Home → the finished tasting → tap a glass → product screen with your note. | Archive. |
-| 13 | Profil → **Log ud** → confirm. | Shows there is no account to delete; data lives on the device and is removed with the app. |
+| 13 | Back in the lobby of a new tasting with the second phone joined: tap **Fjern** on the guest's tile → confirm. | The moderation control Apple asks about for user content. |
+| 14 | Profil → **Rapportér indhold** → **Skriv til os** (Mail opens; cancel it). | The reporting mechanism. |
+| 15 | Profil → **Log ud** → confirm → sign in again with the same name. | Data is still there: no account, one device profile. |
+| 16 | Profil → **Slet alle mine data** → **Slet alt**. | Everything gone, back to the name screen. |
 
 Upload the file in the App Store Connect reply (it accepts video), and keep a
-copy in this folder as `app-review-recording.mp4` (git-ignored by size — store
-it outside git if it is large).
+copy in this folder as `app-review-recording.mp4` (`*.mp4` here is git-ignored).
+
+A simulator run of this exact script is in `app-review-recording-simulator.mp4`
+(also on the Desktop). It shows build 2 end to end and is a rehearsal for the
+phone recording: Apple asked for a physical device, so record the real one and
+attach that; keep the simulator file as a fallback if the reviewer accepts it.
+Two things differ on the phone: the Camera and Local Network prompts appear,
+and "Skriv til os" opens Mail instead of showing the address.

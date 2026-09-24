@@ -131,6 +131,17 @@ class TastingHost {
 
   /// Pushes a fresh snapshot to everyone. Called after any change the host
   /// makes — revealing a glass, moving on, editing the programme.
+  /// Puts one guest out: tells them why, closes the socket, forgets them. The
+  /// delegate has already struck them from the room, so the socket closing
+  /// must not count as them leaving — hence the removal before the close.
+  Future<void> expel(String userId, {required String reason}) async {
+    final guest = _guests.remove(userId);
+    if (guest == null) return;
+    guest.send(PeerMessage.error(reason));
+    await guest.close();
+    _emit();
+  }
+
   Future<void> broadcastSync() async {
     for (final guest in _guests.values.toList()) {
       if (guest.userId == null) continue;

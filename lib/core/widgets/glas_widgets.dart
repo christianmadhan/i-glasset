@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../theme/glas_theme.dart';
@@ -123,10 +125,16 @@ class _Surface extends StatelessWidget {
     );
 
     // Applied outside the column, so a GlasSpacer inside it still has an
-    // unconstrained main axis to grow into.
-    Widget capped(Widget child) => Center(
+    // unconstrained main axis to grow into. [minHeight] is re-imposed inside
+    // the Center, which would otherwise loosen it: without that the column
+    // shrinks to its intrinsic height, floats mid-screen, and any difference
+    // between a child's intrinsic and laid-out height paints as an overflow.
+    Widget capped(Widget child, {double minHeight = 0}) => Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: _maxContentWidth),
+            constraints: BoxConstraints(
+              maxWidth: _maxContentWidth,
+              minHeight: minHeight,
+            ),
             child: child,
           ),
         );
@@ -146,13 +154,10 @@ class _Surface extends StatelessWidget {
                   ? LayoutBuilder(
                       builder: (context, constraints) => SingleChildScrollView(
                         padding: padding,
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minHeight: (constraints.maxHeight -
-                                    padding.vertical)
-                                .clamp(0.0, double.infinity),
-                          ),
-                          child: capped(IntrinsicHeight(child: column)),
+                        child: capped(
+                          IntrinsicHeight(child: column),
+                          minHeight: (constraints.maxHeight - padding.vertical)
+                              .clamp(0.0, double.infinity),
                         ),
                       ),
                     )
@@ -396,19 +401,41 @@ class StatTile extends StatelessWidget {
   final String label;
   final double valueSize;
 
+  static const _padding = 14.0;
+
   @override
   Widget build(BuildContext context) {
     final c = context.glas;
+    final valueStyle = GlasType.display(valueSize, color: c.ink, height: 1.1);
+    final labelStyle = GlasType.body(12, color: c.muted, height: 1.3);
+
+    // In a StatRow the tile knows its width without measuring (it sits inside
+    // an IntrinsicHeight, where a LayoutBuilder may not), so words that would
+    // not fit — "gennemsnit" three to a row on a small phone — are set a
+    // little smaller rather than split.
+    final width = _StatTileWidth.of(context);
+    final base = MediaQuery.textScalerOf(context);
+    final inherited = DefaultTextStyle.of(context).style;
+    TextScaler fit(String text, TextStyle style) => width == null
+        ? base
+        : wholeWordsScaler(
+            text: text,
+            style: inherited.merge(style),
+            maxWidth: width - 2 * _padding - 2,
+            base: base,
+            textDirection: Directionality.of(context),
+          );
+
     return GlasCard(
       radius: 16,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(_padding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(value, style: GlasType.display(valueSize, color: c.ink, height: 1.1)),
+          Text(value, style: valueStyle, textScaler: fit(value, valueStyle)),
           const SizedBox(height: 4),
-          Text(label, style: GlasType.body(12, color: c.muted, height: 1.3)),
+          Text(label, style: labelStyle, textScaler: fit(label, labelStyle)),
         ],
       ),
     );
@@ -491,17 +518,37 @@ class StatRow extends StatelessWidget {
   final double gap;
 
   @override
-  Widget build(BuildContext context) => IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (var i = 0; i < children.length; i++) ...[
-              if (i > 0) SizedBox(width: gap),
-              Expanded(child: children[i]),
-            ],
-          ],
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) => _StatTileWidth(
+          width: (constraints.maxWidth - gap * (children.length - 1)) /
+              children.length,
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < children.length; i++) ...[
+                  if (i > 0) SizedBox(width: gap),
+                  Expanded(child: children[i]),
+                ],
+              ],
+            ),
+          ),
         ),
       );
+}
+
+/// The width each child of a [StatRow] gets, for tiles that fit their words.
+class _StatTileWidth extends InheritedWidget {
+  const _StatTileWidth({required this.width, required super.child});
+
+  final double width;
+
+  static double? of(BuildContext context) => context
+      .dependOnInheritedWidgetOfExactType<_StatTileWidth>()
+      ?.width;
+
+  @override
+  bool updateShouldNotify(_StatTileWidth old) => old.width != width;
 }
 
 /// The round monogram used for people and groups.
@@ -532,7 +579,10 @@ class Monogram extends StatelessWidget {
         color: background ?? c.accentSoft,
         borderRadius: BorderRadius.circular(radius),
       ),
-      child: Text(
+      padding: EdgeInsets.all(size * 0.12),
+      // A graphic, not running text: the initials fill the shape at any text
+      // size rather than growing out of it.
+      child: FitText(
         initials,
         style: GlasType.display(size * 0.42, color: foreground ?? c.accent),
       ),
@@ -608,6 +658,169 @@ class ChipWrap extends StatelessWidget {
 enum GlasButtonTone { accent, ink, paper, outline }
 
 /// The 54px primary action that closes most screens.
+/// Where a line may break: spaces, and after a hyphen or slash, as Flutter
+/// itself breaks.
+final _wordBreaks = RegExp(r'[\s\-/]+');
+
+/// The text scale at which no single word of [text] is wider than
+/// [maxWidth]: the reader's own [base] scale when that already fits, otherwise
+/// just enough smaller that lines break between words, never inside one.
+///
+/// Danish runs to long compounds — "topsmagninger", "gættekonkurrencen" — and
+/// a narrow phone at a large text size would otherwise split them mid-word.
+///
+/// [style] must be the style the text is finally drawn in, merged with the
+/// [DefaultTextStyle] — the theme's letter spacing is part of the width.
+TextScaler wholeWordsScaler({
+  required String text,
+  required TextStyle style,
+  required double maxWidth,
+  required TextScaler base,
+  TextDirection textDirection = TextDirection.ltr,
+}) {
+  if (!maxWidth.isFinite || maxWidth <= 0) return base;
+  final words = [
+    for (final w in text.split(_wordBreaks))
+      if (w.isNotEmpty) w,
+  ];
+
+  double widest(TextScaler scaler) {
+    var result = 0.0;
+    for (final word in words) {
+      final painter = TextPainter(
+        text: TextSpan(text: word, style: style),
+        textDirection: textDirection,
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout();
+      result = math.max(result, painter.width);
+      painter.dispose();
+    }
+    return result;
+  }
+
+  // Letter spacing does not shrink with the scale, so one proportional step
+  // can fall a little short; a few refinements always land inside.
+  final size = style.fontSize ?? 14;
+  var scaler = base;
+  for (var i = 0; i < 4; i++) {
+    final w = widest(scaler);
+    if (w <= maxWidth) return scaler;
+    scaler = TextScaler.linear(scaler.scale(size) / size * (maxWidth / w) * 0.995);
+  }
+  return scaler;
+}
+
+/// A [Text] that wraps between words but never inside one: if a single word
+/// would not fit the width, the whole text is set just small enough that it
+/// does. For headlines and names, where "topsmagninge / r" reads as a typo.
+///
+/// Measures its width with a [LayoutBuilder], so it cannot sit inside an
+/// [IntrinsicHeight] or [IntrinsicWidth]; [StatTile] fits its words from the
+/// width [StatRow] hands it instead.
+class WholeWordsText extends StatelessWidget {
+  const WholeWordsText(
+    this.text, {
+    super.key,
+    required this.style,
+    this.textAlign,
+    this.maxLines,
+    this.overflow,
+  });
+
+  final String text;
+  final TextStyle style;
+  final TextAlign? textAlign;
+  final int? maxLines;
+  final TextOverflow? overflow;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) => Text(
+          text,
+          style: style,
+          textAlign: textAlign,
+          maxLines: maxLines,
+          overflow: overflow,
+          textScaler: wholeWordsScaler(
+            text: text,
+            style: DefaultTextStyle.of(context).style.merge(style),
+            maxWidth: constraints.maxWidth,
+            base: MediaQuery.textScalerOf(context),
+            textDirection: Directionality.of(context),
+          ),
+        ),
+      );
+}
+
+/// Places its children side by side while each still gets [minChildWidth]
+/// (scaled with the reader's text size), and stacks them full width below
+/// that — so a pair of buttons on a narrow phone keeps its labels at full
+/// size instead of shrinking them.
+class ButtonRow extends StatelessWidget {
+  const ButtonRow({
+    super.key,
+    required this.children,
+    this.gap = 10,
+    this.minChildWidth = 150,
+  });
+
+  final List<Widget> children;
+  final double gap;
+  final double minChildWidth;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) {
+          final each = (constraints.maxWidth - gap * (children.length - 1)) /
+              children.length;
+          final needed =
+              MediaQuery.textScalerOf(context).scale(minChildWidth);
+          if (each >= needed) {
+            return Row(children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0) SizedBox(width: gap),
+                Expanded(child: children[i]),
+              ],
+            ]);
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0) SizedBox(height: gap * 0.8),
+                children[i],
+              ],
+            ],
+          );
+        },
+      );
+}
+
+/// One line of text that shrinks, rather than wrapping, clipping or spilling,
+/// when the box it sits in is too small for it — a long label in a button that
+/// shares its row, or a large accessibility text size in a fixed-height box.
+/// At normal sizes it is just a [Text].
+class FitText extends StatelessWidget {
+  const FitText(
+    this.text, {
+    super.key,
+    required this.style,
+    this.alignment = Alignment.center,
+  });
+
+  final String text;
+  final TextStyle style;
+  final AlignmentGeometry alignment;
+
+  @override
+  Widget build(BuildContext context) => FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: alignment,
+        child: Text(text, style: style, maxLines: 1, softWrap: false),
+      );
+}
+
 class GlasButton extends StatelessWidget {
   const GlasButton({
     super.key,
@@ -651,13 +864,16 @@ class GlasButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(15),
             border: border == null ? null : Border.all(color: border),
           ),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (leading != null) ...[leading!, const SizedBox(width: 10)],
-              Text(
-                label,
-                style: GlasType.body(16, color: fg, weight: FontWeight.w500),
+              Flexible(
+                child: FitText(
+                  label,
+                  style: GlasType.body(16, color: fg, weight: FontWeight.w500),
+                ),
               ),
               if (trailing != null) ...[const SizedBox(width: 10), trailing!],
             ],
@@ -1028,7 +1244,9 @@ class Stepper2 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.glas;
-    Widget button(String glyph, int next, bool enabled) => GlasTap(
+    // Icons, not "−"/"+" characters: they stay inside the circle at any
+    // text size.
+    Widget button(IconData glyph, int next, bool enabled) => GlasTap(
           onTap: enabled ? () => onChanged(next) : null,
           radius: 999,
           child: Opacity(
@@ -1041,7 +1259,7 @@ class Stepper2 extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: c.line),
               ),
-              child: Text(glyph, style: GlasType.body(18, color: c.ink)),
+              child: Icon(glyph, size: size * 0.5, color: c.ink),
             ),
           ),
         );
@@ -1049,16 +1267,15 @@ class Stepper2 extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        button('−', value - 1, value > min),
+        button(Icons.remove_rounded, value - 1, value > min),
         SizedBox(
           width: valueSize + 14,
-          child: Text(
+          child: FitText(
             '$value',
-            textAlign: TextAlign.center,
             style: GlasType.display(valueSize, color: c.ink),
           ),
         ),
-        button('+', value + 1, value < max),
+        button(Icons.add_rounded, value + 1, value < max),
       ],
     );
   }

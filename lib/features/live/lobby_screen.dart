@@ -67,7 +67,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(tasting.title,
+            WholeWordsText(tasting.title,
                 style: GlasType.display(28, color: c.nightInk, height: 1.15)),
             const SizedBox(height: 10),
             Container(
@@ -98,18 +98,42 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
               style: GlasType.body(13, color: c.nightMuted),
             ),
             const SizedBox(height: 12),
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              childAspectRatio: 3.4,
-              children: [
-                for (final person in people)
-                  RiseIn(child: _PersonTile(person: person)),
-              ],
-            ),
+            // Two to a row where a name still has room next to "Fjern", one
+            // on a narrow phone or at a large text size. Rows rather than a
+            // fixed-ratio grid, so a tile is always as tall as its text.
+            LayoutBuilder(builder: (context, constraints) {
+              final scaled = MediaQuery.textScalerOf(context).scale(1);
+              final perRow = constraints.maxWidth / scaled >= 300 ? 2 : 1;
+              Widget tile(({Profile profile, bool isHost}) person) => RiseIn(
+                    child: _PersonTile(
+                      person: person,
+                      onRemove: isHost && !person.isHost
+                          ? () => removeParticipant(
+                                context,
+                                ref,
+                                widget.tastingId,
+                                person.profile,
+                              )
+                          : null,
+                    ),
+                  );
+              return Column(
+                children: [
+                  for (var i = 0; i < people.length; i += perRow) ...[
+                    if (i > 0) const SizedBox(height: 8),
+                    StatRow(
+                      gap: 8,
+                      children: [
+                        for (var j = i; j < i + perRow; j++)
+                          j < people.length
+                              ? tile(people[j])
+                              : const SizedBox.shrink(),
+                      ],
+                    ),
+                  ],
+                ],
+              );
+            }),
           ],
         ),
 
@@ -126,6 +150,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
           Container(
             height: 54,
             alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(15),
               border: Border.all(color: c.nightFieldLine),
@@ -135,9 +160,13 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
               children: [
                 const PulseDot(size: 6),
                 const SizedBox(width: 10),
-                Text(
-                  hostName == null ? 'Venter på værten' : 'Venter på $hostName',
-                  style: GlasType.body(15, color: c.nightInk),
+                Flexible(
+                  child: Text(
+                    hostName == null ? 'Venter på værten' : 'Venter på $hostName',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GlasType.body(15, color: c.nightInk),
+                  ),
                 ),
               ],
             ),
@@ -165,9 +194,12 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
 }
 
 class _PersonTile extends StatelessWidget {
-  const _PersonTile({required this.person});
+  const _PersonTile({required this.person, this.onRemove});
 
   final ({Profile profile, bool isHost}) person;
+
+  /// Set for the host looking at a guest: the way to put them out.
+  final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -198,7 +230,17 @@ class _PersonTile extends StatelessWidget {
           ),
           if (person.isHost)
             Text('VÆRT',
-                style: GlasType.label(10.5, color: c.accent, tracking: 0.1)),
+                style: GlasType.label(10.5, color: c.accent, tracking: 0.1))
+          else if (onRemove != null)
+            GlasTap(
+              onTap: onRemove,
+              radius: 8,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                child: Text('Fjern',
+                    style: GlasType.body(12, color: c.nightMuted)),
+              ),
+            ),
         ],
       ),
     );

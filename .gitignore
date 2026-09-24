@@ -50,3 +50,9 @@ app.*.map.json
 # Local Supabase credentials
 dart_define.json
 .env
+
+# App Review videos are large; keep them out of git
+appstore/metadata/review/*.mp4
+
+# Images written by the layout guard for inspection
+test/goldens/

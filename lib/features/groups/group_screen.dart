@@ -73,7 +73,7 @@ class _Loaded extends ConsumerWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(group.name,
+            WholeWordsText(group.name,
                 style: GlasType.display(30, color: c.ink, height: 1.12)),
             const SizedBox(height: 6),
             Text(
@@ -174,30 +174,27 @@ class _Loaded extends ConsumerWidget {
             children: [
               const SectionLabel('Klubbens tal'),
               const SizedBox(height: 10),
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-                childAspectRatio: 2.1,
-                children: [
-                  StatTile(
-                      value: '${stats.tastingCount}',
-                      label: 'smagninger afholdt'),
-                  StatTile(
-                      value: '${stats.productCount}', label: 'produkter smagt'),
-                  StatTile(
-                    value: stats.average == null
-                        ? '—'
-                        : formatScore(stats.average!),
-                    label: 'gennemsnit i klubben',
-                  ),
-                  StatTile(
-                      value: stats.mostActiveHost ?? '—',
-                      label: 'mest aktive vært'),
-                ],
-              ),
+              // Rows rather than a fixed-ratio grid, so a tile grows when a
+              // host's name or a large text size needs another line.
+              StatRow(children: [
+                StatTile(
+                    value: '${stats.tastingCount}',
+                    label: 'smagninger afholdt'),
+                StatTile(
+                    value: '${stats.productCount}', label: 'produkter smagt'),
+              ]),
+              const SizedBox(height: 10),
+              StatRow(children: [
+                StatTile(
+                  value: stats.average == null
+                      ? '—'
+                      : formatScore(stats.average!),
+                  label: 'gennemsnit i klubben',
+                ),
+                StatTile(
+                    value: stats.mostActiveHost ?? '—',
+                    label: 'mest aktive vært'),
+              ]),
             ],
           ),
 
@@ -318,23 +315,20 @@ class _NextInGroup extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 14),
-          Row(
+          ButtonRow(
+            gap: 8,
+            minChildWidth: 110,
             children: [
-              Expanded(
-                child: GlasButton(
-                  label: isHost ? 'Se program' : 'Se detaljer',
-                  height: 44,
-                  tone: GlasButtonTone.outline,
-                  onTap: () => context.push('/tastings/${tasting.id}/program'),
-                ),
+              GlasButton(
+                label: isHost ? 'Se program' : 'Se detaljer',
+                height: 44,
+                tone: GlasButtonTone.outline,
+                onTap: () => context.push('/tastings/${tasting.id}/program'),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: GlasButton(
-                  label: 'Deltag',
-                  height: 44,
-                  onTap: () => context.push('/join?code=${tasting.joinCode}'),
-                ),
+              GlasButton(
+                label: 'Deltag',
+                height: 44,
+                onTap: () => context.push('/join?code=${tasting.joinCode}'),
               ),
             ],
           ),

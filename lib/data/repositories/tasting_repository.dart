@@ -99,6 +99,10 @@ abstract interface class TastingRepository {
 
   Future<void> leave(String tastingId);
 
+  /// Host only: puts someone out of the room and keeps them out — the code
+  /// stops working for them. Their ratings for this tasting go with them.
+  Future<void> removeParticipant(String tastingId, String userId);
+
   /// Moves the room to a glass. Position 0 means back to the lobby.
   Future<Tasting> advance(String tastingId, int position);
 

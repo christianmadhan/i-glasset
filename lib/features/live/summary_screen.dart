@@ -63,7 +63,7 @@ class SummaryScreen extends ConsumerWidget {
           children: [
             const SectionLabel('Smagningen er slut'),
             const SizedBox(height: 6),
-            Text(tasting.title,
+            WholeWordsText(tasting.title,
                 style: GlasType.display(29, color: c.ink, height: 1.15)),
             const SizedBox(height: 6),
             Text(
@@ -92,7 +92,7 @@ class SummaryScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(ranked.first.item.displayName,
+                          WholeWordsText(ranked.first.item.displayName,
                               style: GlasType.display(24,
                                   color: c.nightInk, height: 1.15)),
                           const SizedBox(height: 4),
@@ -171,13 +171,9 @@ class SummaryScreen extends ConsumerWidget {
             ],
           ),
 
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-          childAspectRatio: 2.1,
+        // Rows rather than a fixed-ratio grid, so a tile grows when a bottle's
+        // name or a large text size needs more lines.
+        StatRow(
           children: [
             StatTile(
               value: allScores.isEmpty
@@ -195,6 +191,11 @@ class SummaryScreen extends ConsumerWidget {
               label: 'dit gennemsnit',
               valueSize: 20,
             ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        StatRow(
+          children: [
             StatTile(
               value: mostDivisive?.item.displayName ?? '—',
               label: mostDivisive == null

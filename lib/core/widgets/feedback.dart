@@ -62,6 +62,12 @@ void showGlasMessage(BuildContext context, String message) {
     );
 }
 
+/// On a night screen the shared `card` role is a translucent wash meant to sit
+/// on the dark ground; a floating dialog needs something you can't see the
+/// page through, so it is flattened onto the surface behind it.
+Color _dialogSurface(GlasColors c) =>
+    c.card.a < 1 ? Color.alphaBlend(c.card, c.paper) : c.card;
+
 /// A yes/no sheet in the app's own palette.
 Future<bool> showGlasConfirm(
   BuildContext context, {
@@ -74,7 +80,7 @@ Future<bool> showGlasConfirm(
   final result = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      backgroundColor: c.card,
+      backgroundColor: _dialogSurface(c),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(title, style: GlasType.display(20, color: c.ink)),
       content: Text(body, style: GlasType.body(14, color: c.muted, height: 1.5)),
@@ -102,7 +108,7 @@ Future<T?> showGlasChoice<T>(
   final c = context.glas;
   return showModalBottomSheet<T>(
     context: context,
-    backgroundColor: c.card,
+    backgroundColor: _dialogSurface(c),
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
     ),

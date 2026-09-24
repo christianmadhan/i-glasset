@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   sdk: ^3.13.0
@@ -48,6 +48,9 @@ dependencies:
     sdk: flutter
   http: ^1.6.0
   bonsoir: ^7.1.5
+  # Already pulled in by supabase_flutter; declared so "Rapportér indhold" can
+  # open the mail app without a new native dependency.
+  url_launcher: ^6.3.2
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -73,6 +76,10 @@ flutter:
 
   assets:
     - assets/images/
+    # The three faces, bundled rather than fetched: google_fonts finds them
+    # here by file name, so the first launch looks right with no network and
+    # the app never contacts Google. See main.dart.
+    - assets/google_fonts/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

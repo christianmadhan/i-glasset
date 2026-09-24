@@ -444,6 +444,51 @@ class LocalTastingRepository
     _touch(tastingId);
   }
 
+  static const _removedMessage = 'Værten har fjernet dig fra smagningen.';
+
+  @override
+  Future<void> removeParticipant(String tastingId, String userId) async {
+    final tasting = await _requireHost(tastingId);
+    if (userId == tasting.hostId) {
+      throw const TastingException('Værten kan ikke fjerne sig selv.');
+    }
+
+    // Out of the room, and onto the door list: admit() refuses the id from
+    // now on, so the code alone no longer gets them back in.
+    await _store.patch(LocalStore.tastings, tastingId, (row) => {
+          ...row,
+          'blocked_user_ids': {
+            ...((row['blocked_user_ids'] as List?)?.cast<String>() ??
+                const <String>[]),
+            userId,
+          }.toList(),
+        });
+    await _store.deleteWhere(
+      LocalStore.participants,
+      (row) => row['tasting_id'] == tastingId && row['user_id'] == userId,
+    );
+
+    // What they said goes with them, so nothing of theirs is left on anyone's
+    // screen after the next sync.
+    final itemIds = {
+      for (final row in await _store.where(
+        LocalStore.items,
+        (row) => row['tasting_id'] == tastingId,
+      ))
+        row['id'] as String,
+    };
+    await _store.deleteWhere(
+      LocalStore.ratings,
+      (row) =>
+          row['user_id'] == userId &&
+          itemIds.contains(row['tasting_item_id']),
+    );
+
+    await _host.expel(userId, reason: _removedMessage);
+    _touch(tastingId);
+    await _host.broadcastSync();
+  }
+
   @override
   Future<Tasting> advance(String tastingId, int position) async {
     await _requireHost(tastingId);
@@ -663,6 +708,10 @@ class LocalTastingRepository
     final userId = profile['id'] as String?;
     if (userId == null) return 'Din profil mangler et id.';
 
+    final blocked =
+        (row['blocked_user_ids'] as List?)?.cast<String>() ?? const <String>[];
+    if (blocked.contains(userId)) return _removedMessage;
+
     final tastingId = row['id'] as String;
     final already = await _store.find(
       LocalStore.participants,
@@ -746,7 +795,8 @@ class LocalTastingRepository
         TastingConfig.parse(tasting['config']).showOthers;
 
     return TastingSnapshot(
-      tasting: tasting,
+      // The door list is the host's business, not the room's.
+      tasting: Map<String, dynamic>.from(tasting)..remove('blocked_user_ids'),
       // The blind: everything identifying is stripped from glasses this guest
       // hasn't been shown yet.
       items: [

@@ -314,6 +314,13 @@ class SupabaseTastingRepository implements TastingRepository {
   }
 
   @override
+  Future<void> removeParticipant(String tastingId, String userId) async {
+    throw const TastingException(
+      'At fjerne deltagere er ikke understøttet mod den hostede backend endnu.',
+    );
+  }
+
+  @override
   Future<Tasting> finish(String tastingId) async {
     final row =
         await _client.rpc('finish_tasting', params: {'p_tasting_id': tastingId});

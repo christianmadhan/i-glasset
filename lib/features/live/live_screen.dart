@@ -465,15 +465,22 @@ class _GuessCard extends StatelessWidget {
 
 /// One name in the host's overview: a filled dot once they have sent.
 class _ReadyChip extends StatelessWidget {
-  const _ReadyChip({required this.name, required this.ready});
+  const _ReadyChip({
+    required this.name,
+    required this.ready,
+    this.onLongPress,
+  });
 
   final String name;
   final bool ready;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
     final c = context.glas;
-    return Container(
+    return GestureDetector(
+      onLongPress: onLongPress,
+      child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
@@ -498,6 +505,7 @@ class _ReadyChip extends StatelessWidget {
               style: GlasType.body(12.5,
                   color: ready ? c.nightInk : c.nightMuted)),
         ],
+      ),
       ),
     );
   }
@@ -591,6 +599,15 @@ class _SubmittedPanel extends ConsumerWidget {
                   _ReadyChip(
                     name: person.profile.firstName,
                     ready: sent.contains(person.profile.id),
+                    // Hold a name to put that person out of the room.
+                    onLongPress: person.isHost
+                        ? null
+                        : () => removeParticipant(
+                              context,
+                              ref,
+                              tastingId,
+                              person.profile,
+                            ),
                   ),
               ],
             ),

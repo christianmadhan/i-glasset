@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/config/env.dart';
 import '../../core/providers.dart';
 import '../../core/theme/glas_theme.dart';
 import '../../core/utils/formatting.dart';
@@ -38,7 +40,7 @@ class ProfileScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(profile?.displayName ?? 'Gæst',
+                  WholeWordsText(profile?.displayName ?? 'Gæst',
                       style: GlasType.display(24, color: c.ink)),
                   const SizedBox(height: 3),
                   Text(
@@ -118,6 +120,11 @@ class ProfileScreen extends ConsumerWidget {
               onTap: () => context.push('/storage'),
             ),
             _Row(
+              label: 'Rapportér indhold',
+              detail: '',
+              onTap: () => _reportContent(context),
+            ),
+            _Row(
               label: 'Log ud',
               detail: '',
               onTap: () async {
@@ -132,6 +139,12 @@ class ProfileScreen extends ConsumerWidget {
                 if (context.mounted) context.go('/login');
               },
             ),
+            if (Env.isLocal)
+              _Row(
+                label: 'Slet alle mine data',
+                detail: '',
+                onTap: () => _eraseEverything(context, ref),
+              ),
           ],
         ),
 
@@ -145,6 +158,56 @@ class ProfileScreen extends ConsumerWidget {
         const HuceFooter(),
       ],
     );
+  }
+}
+
+/// "Rapportér indhold" — the way to tell us about a name, a note or a photo
+/// another participant put in front of you. There is no server to file it
+/// with, so it goes to a person, by mail.
+Future<void> _reportContent(BuildContext context) async {
+  final confirmed = await showGlasConfirm(
+    context,
+    title: 'Rapportér indhold',
+    body: 'Har en deltager skrevet eller vist noget, der ikke hører hjemme i '
+        'en smagning? Skriv til os med smagningens kode og hvad det drejer '
+        'sig om, så følger vi op. Værten kan altid fjerne en deltager fra '
+        'rummet — hold på navnet i lobbyen eller på listen over, hvem der '
+        'har bedømt.',
+    confirmLabel: 'Skriv til os',
+  );
+  if (!confirmed || !context.mounted) return;
+  final mail = Uri.parse(
+    'mailto:christian@huce.dk?subject='
+    '${Uri.encodeComponent('I Glasset: rapportér indhold')}',
+  );
+  final opened = await launchUrl(mail);
+  if (!opened && context.mounted) {
+    showGlasMessage(context, 'Skriv til christian@huce.dk');
+  }
+}
+
+/// "Slet alle mine data" — profile, groups, tastings, ratings and photos, gone
+/// from this phone. What was already shared with the other phones in a room
+/// stays on those phones, as it would around a table.
+Future<void> _eraseEverything(BuildContext context, WidgetRef ref) async {
+  final confirmed = await showGlasConfirm(
+    context,
+    title: 'Slet alle dine data?',
+    body: 'Profil, grupper, smagninger, bedømmelser og flaskebilleder slettes '
+        'fra denne telefon. Det kan ikke fortrydes.',
+    confirmLabel: 'Slet alt',
+  );
+  if (!confirmed || !context.mounted) return;
+  try {
+    final repo = ref.read(localTastingRepositoryProvider);
+    await repo.host.stop();
+    await repo.guest.disconnect();
+    await ref.read(localSessionProvider).forget();
+    await ref.read(localStoreProvider).wipe();
+    await ref.read(localMediaStoreProvider).wipe();
+    if (context.mounted) context.go('/login');
+  } on Object catch (error) {
+    if (context.mounted) showGlasError(context, error);
   }
 }
 

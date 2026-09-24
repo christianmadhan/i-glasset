@@ -45,7 +45,7 @@ class TasteProfileScreen extends ConsumerWidget {
                   : 'Bygget på ${taste.sampleSize} smagninger',
             ),
             const SizedBox(height: 6),
-            Text('Din smagsprofil',
+            WholeWordsText('Din smagsprofil',
                 style: GlasType.display(29, color: c.ink, height: 1.15)),
           ],
         ),

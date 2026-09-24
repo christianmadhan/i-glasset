@@ -37,11 +37,14 @@ class LocalStore {
   Stream<String> get changes => _changes.stream;
 
   Future<Directory> _directory() async {
-    if (_dir != null) return _dir!;
-    final base = _rootOverride ?? await getApplicationDocumentsDirectory();
-    final dir = Directory('${base.path}/$_folderName/data');
+    final dir = _dir ??= Directory(
+      '${(_rootOverride ?? await getApplicationDocumentsDirectory()).path}'
+      '/$_folderName/data',
+    );
+    // Re-checked every time: the erase-all-data flow deletes the whole app
+    // folder, images included, and the next write must still have a home.
     if (!await dir.exists()) await dir.create(recursive: true);
-    return _dir = dir;
+    return dir;
   }
 
   File _fileFor(Directory dir, String collection) =>
@@ -182,6 +185,18 @@ class LocalStore {
 
   /// Waits for every queued write to reach disk. Tests and shutdown use this.
   Future<void> flush() => _pending;
+
+  /// Deletes every collection, on disk and in memory. "Slet alle mine data" is
+  /// the only caller.
+  Future<void> wipe() async {
+    await flush();
+    final dir = await _directory();
+    if (await dir.exists()) await dir.delete(recursive: true);
+    final touched = _collections.keys.toList();
+    _collections.clear();
+    _loaded.clear();
+    if (!_changes.isClosed) touched.forEach(_changes.add);
+  }
 
   Future<void> dispose() async {
     await flush();

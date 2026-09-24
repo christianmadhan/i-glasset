@@ -198,6 +198,18 @@ class GlasColors extends ThemeExtension<GlasColors> {
   }
 }
 
+/// Loads every face and weight the app draws with, so the first frame is
+/// already set in them. Asking for each style is what starts the load; the
+/// files are bundled, so this takes milliseconds.
+Future<void> preloadGlasFonts() async {
+  GlasType.display(12);
+  GlasType.displayItalic(12);
+  GlasType.body(12);
+  GlasType.body(12, weight: FontWeight.w500);
+  GlasType.label(12);
+  await GoogleFonts.pendingFonts();
+}
+
 /// The three type roles in the design.
 ///
 /// * [display] — Libre Caslon Text, for names, numbers and headlines

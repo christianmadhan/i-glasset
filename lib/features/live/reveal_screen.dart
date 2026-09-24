@@ -234,7 +234,7 @@ class _RevealBody extends StatelessWidget {
                 style: GlasType.body(13, color: c.nightMuted)),
             const SizedBox(height: 7),
           ],
-          Text(item.displayName,
+          WholeWordsText(item.displayName,
               style: GlasType.display(30, color: c.nightInk, height: 1.15)),
           if (item.meta.isNotEmpty) ...[
             const SizedBox(height: 7),

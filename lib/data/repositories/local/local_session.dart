@@ -55,8 +55,29 @@ class LocalSession {
     return user;
   }
 
+  /// Signs out, but remembers whose phone this is: the next sign-in reattaches
+  /// to the same profile instead of minting a stranger and orphaning every
+  /// tasting on the device.
   Future<void> clear() async {
+    final id = userId;
+    if (id != null) {
+      await _store.upsert(LocalStore.session, {'id': 'last', 'user_id': id});
+    }
     await _store.delete(LocalStore.session, 'current');
+    _set(null);
+  }
+
+  /// The profile this device last signed out of, if any.
+  Future<String?> lastUserId() async {
+    final row = await _store.byId(LocalStore.session, 'last');
+    return row?['user_id'] as String?;
+  }
+
+  /// Forgets everything, the remembered profile included. Only the
+  /// erase-all-data flow calls this.
+  Future<void> forget() async {
+    await _store.delete(LocalStore.session, 'current');
+    await _store.delete(LocalStore.session, 'last');
     _set(null);
   }
 

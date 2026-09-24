@@ -67,17 +67,18 @@ Keep these in the Notes field on every future submission.
 
 - **External services:** none — no server, no auth, no analytics, no ads, no
   payments, no AI. Device-to-device Bonjour + TCP on the local network only.
-  Fonts are fetched once from Google Fonts by the `google_fonts` package and
-  cached on the device.
+  The fonts are bundled in the app, so nothing is downloaded at runtime.
 - **Regional differences:** none; identical in all regions, Danish UI everywhere.
 - **Regulated industry / protected material:** not applicable. The app does not
   sell alcohol and ships no third-party content.
 - **User-generated content:** names, scores, notes and bottle photos are shared
   only with the phones that joined that tasting with the host's code, over the
   local network. No public feed, no user discovery, nothing stored by us. The
-  host controls the code and ends the evening; any participant can leave.
-- **Accounts:** none, therefore no account deletion. All data is on the device
-  and removed with the app.
+  host can remove a participant (lobby "Fjern" / hold a name in the roster),
+  which deletes their contributions and bars the code for them; any participant
+  can leave; Profil → "Rapportér indhold" reports content to us by e-mail.
+- **Accounts:** none, therefore no account deletion. Profil → "Slet alle mine
+  data" erases everything on the device; deleting the app does the same.
 - **Screen recording:** `screen_recording_script.md` lists the flow to record.
 
 ## Contact
